@@ -43,8 +43,8 @@ def i2t(images, captions, npts=None):
         im = images[5 * index].reshape(1, images.shape[1])
 
         # Compute scores
-        d = numpy.dot(im, captions.T).flatten()
-        inds = numpy.argsort(d)[::-1]
+        d = numpy.linalg.norm(numpy.maximum(0, captions - im), ord=1, axis=1).flatten()
+        inds = numpy.argsort(d)
         index_list.append(inds[0])
 
         # Score
@@ -71,18 +71,20 @@ def t2i(images, captions, npts=None):
     if npts == None:
         npts = images.shape[0] / 5
     ims = numpy.array([images[i] for i in range(0, len(images), 5)])
+    ims = numpy.expand_dims(ims, 0)
 
     ranks = numpy.zeros(5 * npts)
     for index in range(npts):
 
         # Get query captions
         queries = captions[5*index : 5*index + 5]
+        queries = numpy.expand_dims(queries, 1)
 
         # Compute scores
-        d = numpy.dot(queries, ims.T)
+        d = numpy.linalg.norm(numpy.maximum(0, queries - ims), ord=1, axis=2)
         inds = numpy.zeros(d.shape)
         for i in range(len(inds)):
-            inds[i] = numpy.argsort(d[i])[::-1]
+            inds[i] = numpy.argsort(d[i])
             ranks[5 * index + i] = numpy.where(inds[i] == index)[0][0]
 
     # Compute metrics

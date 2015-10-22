@@ -34,20 +34,22 @@ def contrastive_loss(margin, im, s):
     """
     Compute contrastive loss
     """
-    # compute image-sentence score matrix
-    scores = tensor.dot(im, s.T)
-    diagonal = scores.diagonal()
+    # compute sentence-image score matrix
+    im = im.dimshuffle(('x', 0, 1))
+    s = s.dimshuffle((0, 'x', 1))
+    diffs = s - im
+    scores = tensor.maximum(0, diffs).norm(1, 2)  # L1 norm
+    #scores = theano.printing.Print('scores')(scores)
 
-    # compare every diagonal score to scores in its column (i.e, all contrastive images for each sentence)
-    cost_s = tensor.maximum(0, margin - diagonal + scores)
-    # compare every diagonal score to scores in its row (i.e, all contrastive sentences for each image)
-    cost_im = tensor.maximum(0, margin - diagonal.reshape((-1, 1)) + scores)
 
-    # clear diagonals
-    cost_s = fill_diagonal(cost_s, 0)
-    cost_im = fill_diagonal(cost_im, 0)
+    costs = tensor.maximum(0, margin - scores)  # force off-diagonal scores to be greater than margin
+    costs = fill_diagonal(costs, 0)
 
-    return cost_s.sum() + cost_im.sum()
+    #costs = theano.printing.Print('costs')(costs)
+    diagonal_costs = scores.diagonal()  # force diagonal entries to be 0
+    #diagonal_costs = theano.printing.Print('diagonal_costs')(diagonal_costs)
+
+    return costs.sum() / costs.shape[0] + diagonal_costs.sum()
 
 def build_model(tparams, options):                                                                                           
     """
@@ -71,8 +73,7 @@ def build_model(tparams, options):
     proj = get_layer(options['encoder'])[1](tparams, emb, None, options,
                                             prefix='encoder',
                                             mask=mask)
-    sents = proj[0][-1]
-    sents = l2norm(sents)
+    sents = abs(proj[0][-1])
 
     # Encode images (source)
     images = get_layer('ff')[1](tparams, im, options, prefix='ff_image', activ='linear')
@@ -104,8 +105,7 @@ def build_sentence_encoder(tparams, options):
     proj = get_layer(options['encoder'])[1](tparams, emb, None, options,
                                             prefix='encoder',
                                             mask=mask)
-    sents = proj[0][-1]
-    sents = l2norm(sents)
+    sents = abs(proj[0][-1])
 
     return trng, [x, mask], sents
 
@@ -122,7 +122,7 @@ def build_image_encoder(tparams, options):
 
     # Encode images
     images = get_layer('ff')[1](tparams, im, options, prefix='ff_image', activ='linear')
-    images = l2norm(images)
+    images = abs(images)
     
     return trng, [im], images
 
