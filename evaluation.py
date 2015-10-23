@@ -21,8 +21,8 @@ def evalrank(model, data, split='dev'):
     ls = encode_sentences(model, X[0])
     lim = encode_images(model, X[1])
 
-    (r1, r5, r10, medr) = i2t(lim, ls)
-    print "Image to text: %.1f, %.1f, %.1f, %.1f" % (r1, r5, r10, medr)
+    #(r1, r5, r10, medr) = i2t(lim, ls)
+    #print "Image to text: %.1f, %.1f, %.1f, %.1f" % (r1, r5, r10, medr)
     (r1i, r5i, r10i, medri) = t2i(lim, ls)
     print "Text to image: %.1f, %.1f, %.1f, %.1f" % (r1i, r5i, r10i, medri)
 
@@ -73,6 +73,8 @@ def t2i(images, captions, npts=None):
     ims = numpy.array([images[i] for i in range(0, len(images), 5)])
     ims = numpy.expand_dims(ims, 0)
 
+    num_zero = 0
+
     ranks = numpy.zeros(5 * npts)
     for index in range(npts):
 
@@ -82,14 +84,22 @@ def t2i(images, captions, npts=None):
 
         # Compute scores
         d = numpy.linalg.norm(numpy.maximum(0, queries - ims), ord=1, axis=2)
-        inds = numpy.zeros(d.shape)
-        for i in range(len(inds)):
-            inds[i] = numpy.argsort(d[i])
-            ranks[5 * index + i] = numpy.where(inds[i] == index)[0][0]
+
+        for i in range(len(d)):
+            d_i = d[i]
+            inds = numpy.argsort(d_i)
+
+            ranks[5 * index + i] = numpy.where(inds == index)[0][0]
+            rank = ranks[5*index + i]
+
+            if d_i[inds[rank]] == 0:
+                num_zero += 1
+
 
     # Compute metrics
     r1 = 100.0 * len(numpy.where(ranks < 1)[0]) / len(ranks)
     r5 = 100.0 * len(numpy.where(ranks < 5)[0]) / len(ranks)
     r10 = 100.0 * len(numpy.where(ranks < 10)[0]) / len(ranks)
     medr = numpy.floor(numpy.median(ranks)) + 1
+    print("Fraction of GT pairs with score zero: " + str(num_zero) + " / " + str(captions.shape[0]))
     return (r1, r5, r10, medr)
