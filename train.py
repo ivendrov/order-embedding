@@ -43,6 +43,7 @@ def trainer(data='coco',  #f8k, f30k, coco
             saveto='/ais/gobi3/u/rkiros/uvsmodels/coco.npz',
             validFreq=100,
             lrate=0.01,
+            name='anon',
             reload_=False):
 
     # Model options
@@ -62,7 +63,18 @@ def trainer(data='coco',  #f8k, f30k, coco
     model_options['batch_size'] = batch_size
     model_options['saveto'] = saveto
     model_options['validFreq'] = validFreq
+    model_options['lrate'] = lrate
     model_options['reload_'] = reload_
+
+
+    import datetime
+    timestampedName = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S') + '_' + name
+
+    from logger import Log
+    log = Log(name=timestampedName, hyperparams=model_options, saveDir='vis_training/static',
+              xLabel='Examples Seen', saveFrequency=1)
+
+
 
     print model_options
 
@@ -186,6 +198,8 @@ def trainer(data='coco',  #f8k, f30k, coco
 
             if numpy.mod(uidx, dispFreq) == 0:
                 print 'Epoch ', eidx, 'Update ', uidx, 'Cost ', cost, 'UD ', ud
+                log.update({'Error': float(cost)}, n_samples)
+
 
             if numpy.mod(uidx, validFreq) == 0:
 
@@ -200,12 +214,12 @@ def trainer(data='coco',  #f8k, f30k, coco
                 ls = encode_sentences(curr_model, dev[0])
                 lim = encode_images(curr_model, dev[1])
 
-                (r1, r5, r10, medr) = i2t(lim, ls)
-                print "Image to text: %.1f, %.1f, %.1f, %.1f" % (r1, r5, r10, medr)
-                (r1i, r5i, r10i, medri) = t2i(lim, ls)
-                print "Text to image: %.1f, %.1f, %.1f, %.1f" % (r1i, r5i, r10i, medri)
+                (r1, r5, r10, medr) = t2i(lim, ls)
+                print "Text to image: %.1f, %.1f, %.1f, %.1f" % (r1, r5, r10, medr)
 
-                currscore = r1 + r5 + r10 + r1i + r5i + r10i
+                log.update({'R@1': r1, 'R@5': r5, 'R@10': r10, 'median_rank': medr}, n_samples)
+
+                currscore = r1 + r5 + r10
                 if currscore > curr:
                     curr = currscore
 
