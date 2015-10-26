@@ -11,6 +11,7 @@ class HierarchyData():
         self.maxlen = maxlen
         self.worddict = worddict
         self.n_words = n_words
+        self.leaves = []
 
         self.parents = defaultdict(set)
         self.num_vertices = len(data['caps'])
@@ -22,12 +23,17 @@ class HierarchyData():
 
     def prepare(self):
         print("Preparing data...")
-        # compute adjacency list
+        # compute adjacency list, and leaves
         edges = self.data['edges']
+        leaves = set(edge[0] for edge in edges)
 
         for edge in edges:
             self.parents[edge[0]].add(edge[1])
+            if edge[1] in leaves:
+                leaves.remove(edge[1])
 
+        self.leaves = list(leaves)
+        print("Split has " + str(len(self.leaves)) + " leaves")
         print("Done")
 
 
@@ -86,18 +92,17 @@ class HierarchyData():
 
     def reset(self):
         self.idx = 0
-        self.order = numpy.random.permutation(self.num_vertices)
+        self.order = numpy.random.permutation(len(self.leaves))
 
 
 
     def next(self):
-        print("Preprocessing next batch...")
         indices = []
 
         while len(indices) < self.batch_size:
-            indices.append(self.order[self.idx])
+            indices.append(self.leaves[self.order[self.idx]])
             self.idx += 1
-            if self.idx >= self.num_vertices:
+            if self.idx >= len(self.leaves):
                 self.reset()
                 raise StopIteration()
 
@@ -107,22 +112,22 @@ class HierarchyData():
         negatives = self.contrastive_negatives(edges, len(indices))
 
         x, x_mask = self.prepare_caps(indices)
-
-        print("Done")
         return x, x_mask, None, edges, negatives
 
 
     def all(self):
-        indices, edges = self.up_closure(list(range(self.num_vertices)))
+        indices, edges = self.up_closure(self.leaves)
         edges = numpy.array(edges)
         negatives = self.contrastive_negatives(edges, len(indices))
 
         caps = []
         for i in indices:
-            print(i)
             caps.append(self.data['caps'][i])
 
-        return caps, edges, negatives
+        target = numpy.hstack((numpy.ones(edges.shape[:1]), numpy.zeros(negatives.shape[:1])))
+        edges = numpy.vstack((edges, negatives))
+
+        return caps, edges, target
 
 
     def __iter__(self):
@@ -141,10 +146,10 @@ class HierarchyData():
 
         x = numpy.zeros((maxlen, n_samples)).astype('int64')
 
-        # 1 means use, 0 means skip (also end-of-sentence token)
+        # 1 means use, 0 means skip
         x_mask = numpy.zeros((maxlen, n_samples)).astype('float32')
         for idx, s in enumerate(seqs):
-            x[:lengths[idx],idx] = s
+            x[:lengths[idx], idx] = s
             x_mask[:lengths[idx]+1, idx] = 1.
 
         return x, x_mask
