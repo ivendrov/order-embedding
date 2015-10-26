@@ -12,19 +12,56 @@ def evalrank(model, data, split='dev'):
     data options: f8k, f30k, coco
     """
     print 'Loading dataset'
-    if split == 'dev':
-        X = load_dataset(data, load_train=False)[1]
-    else:
-        X = load_dataset(data, load_train=False)[2]
+    dataset = load_dataset(data, load_train=False)[split]
 
     print 'Computing results...'
-    ls = encode_sentences(model, X[0])
-    lim = encode_images(model, X[1])
+    ls = encode_sentences(model, dataset['caps'])
+    lim = encode_images(model, dataset['ims'])
 
     #(r1, r5, r10, medr) = i2t(lim, ls)
     #print "Image to text: %.1f, %.1f, %.1f, %.1f" % (r1, r5, r10, medr)
     (r1i, r5i, r10i, medri) = t2i(lim, ls)
     print "Text to image: %.1f, %.1f, %.1f, %.1f" % (r1i, r5i, r10i, medri)
+
+
+def hierachical_error(e):
+    return numpy.linalg.norm(numpy.maximum(e[:, 1, :] - e[:, 0, :], 0), ord=1, axis=1)
+
+def errors(s, pos, neg):
+    target = numpy.hstack((numpy.ones(pos.shape[:1]), numpy.zeros(neg.shape[:1])))
+    edges = numpy.vstack((pos, neg))
+    errs = hierachical_error(s[edges])
+    return target, errs
+
+
+
+def best_threshold(s, pos, neg):
+    target, errs = errors(s, pos, neg)
+    indices = numpy.argsort(errs)
+    sortedErrors = errs[indices]
+    sortedTarget = target[indices]
+    tp = numpy.cumsum(sortedTarget)
+    invSortedTarget = (sortedTarget == 0).astype('float32')
+    Nneg = invSortedTarget.sum()
+    fp = numpy.cumsum(invSortedTarget)
+    tn = fp * -1 + Nneg
+    accuracies = (tp + tn) / sortedTarget.shape[0]
+    i = accuracies.argmax()
+    print("Number of positives, negatives, tp, tn: %f %f %f %f" % (target.sum(), Nneg, tp[i], tn[i]))
+    return sortedErrors[i]
+
+
+
+def eval_accuracy(s1, p1, n1, s2, p2, n2):
+    thresh = best_threshold(s1, p1, n1)
+
+    target, errs = errors(s2, p2, n2)
+    pred = errs <= thresh
+
+    accuracy = float((pred == target).astype('float32').mean())
+
+    return accuracy
+
 
 def i2t(images, captions, npts=None):
     """

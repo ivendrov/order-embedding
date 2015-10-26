@@ -26,30 +26,27 @@ def init_params(options):
                                               nin=options['dim_word'], dim=options['dim'])
 
     # Image encoder
-    params = get_layer('ff')[0](options, params, prefix='ff_image', nin=options['dim_image'], nout=options['dim'])
+    # params = get_layer('ff')[0](options, params, prefix='ff_image', nin=options['dim_image'], nout=options['dim'])
 
     return params
 
-def contrastive_loss(margin, im, s):
+def hierarchical_error(edges):
+    specific = edges[:, 0, :]
+    general = edges[:, 1, :]
+    return tensor.maximum(0, general-specific + 1e-5).norm(1, 1)
+
+def contrastive_loss(margin, s, edges, negatives):
     """
     Compute contrastive loss
     """
-    # compute sentence-image score matrix
-    im = im.dimshuffle(('x', 0, 1))
-    s = s.dimshuffle((0, 'x', 1))
-    diffs = s - im + 1e-5
-    scores = tensor.maximum(0, diffs).norm(1, 2)  # L1 norm
-    #scores = theano.printing.Print('scores')(scores)
+    pos = s[edges]
+    neg = s[negatives]
 
+    pos_costs = hierarchical_error(pos)
+    neg_costs = tensor.maximum(0, margin - hierarchical_error(neg))
 
-    costs = tensor.maximum(0, margin - scores)  # force off-diagonal scores to be greater than margin
-    costs = fill_diagonal(costs, 0)
+    return (pos_costs.sum() + neg_costs.sum()) / (edges.shape[0] + negatives.shape[0])
 
-    #costs = theano.printing.Print('costs')(costs)
-    diagonal_costs = scores.diagonal()  # force diagonal entries to be 0
-    #diagonal_costs = theano.printing.Print('diagonal_costs')(diagonal_costs)
-
-    return costs.sum() / costs.shape[0] + diagonal_costs.sum()
 
 def build_model(tparams, options):                                                                                           
     """
@@ -61,7 +58,8 @@ def build_model(tparams, options):
     # description string: #words x #samples
     x = tensor.matrix('x', dtype='int64')
     mask = tensor.matrix('mask', dtype='float32')
-    im = tensor.matrix('im', dtype='float32')
+    edges = tensor.matrix('edges', dtype='int64')
+    negatives = tensor.matrix('negatives', dtype='int64')
 
     n_timesteps = x.shape[0]
     n_samples = x.shape[1]
@@ -75,13 +73,10 @@ def build_model(tparams, options):
                                             mask=mask)
     sents = abs(proj[0][-1])
 
-    # Encode images (source)
-    images = get_layer('ff')[1](tparams, im, options, prefix='ff_image', activ='linear')
-
     # Compute loss
-    cost = contrastive_loss(options['margin'], images, sents)
+    cost = contrastive_loss(options['margin'], sents, edges, negatives)
 
-    return trng, [x, mask, im], cost
+    return trng, [x, mask, edges, negatives], cost
 
 def build_sentence_encoder(tparams, options):
     """

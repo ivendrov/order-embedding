@@ -6,7 +6,11 @@ import numpy
 #-----------------------------------------------------------------------------#
 # Specify dataset(s) location here
 #-----------------------------------------------------------------------------#
-path_to_data = '/ais/gobi3/u/rkiros/uvsdata/'
+def path_to_data(name):
+    if name in ['f8k', 'f30k', 'coco']:
+        return '/ais/gobi3/u/rkiros/uvsdata/'
+    else:
+        return '/u/vendrov/qanda/hierarchy/'
 #-----------------------------------------------------------------------------#
 
 def load_dataset(name='f8k', load_train=True):
@@ -14,30 +18,40 @@ def load_dataset(name='f8k', load_train=True):
     Load captions and image features
     Possible options: f8k, f30k, coco
     """
-    loc = path_to_data + name + '/'
-    
-    # Captions
-    train_caps, dev_caps, test_caps = [],[],[]
-    if load_train:
-        with open(loc+name+'_train_caps.txt', 'rb') as f:
-            for line in f:
-                train_caps.append(line.strip())
-    else:
-        train_caps = None
-    with open(loc+name+'_dev_caps.txt', 'rb') as f:
-        for line in f:
-            dev_caps.append(line.strip())
-    with open(loc+name+'_test_caps.txt', 'rb') as f:
-        for line in f:
-            test_caps.append(line.strip())
-            
-    # Image features
-    if load_train:
-        train_ims = numpy.load(loc+name+'_train_ims.npy')
-    else:
-        train_ims = None
-    dev_ims = numpy.load(loc+name+'_dev_ims.npy')
-    test_ims = numpy.load(loc+name+'_test_ims.npy')
+    loc = path_to_data(name) + name + '/'
 
-    return (train_caps, train_ims), (dev_caps, dev_ims), (test_caps, test_ims)
+    splits = []
+    if load_train:
+        splits = ['train', 'dev', 'test']
+    else:
+        splits = ['dev', 'test']
+
+
+    dataset = {}
+
+    for split in splits:
+        caps = []
+        with open(loc+name+'_' + split + '_caps.txt', 'rb') as f:
+            for line in f:
+                caps.append(line.strip())
+        ims = None
+        try:
+            ims = numpy.load(loc+name+'_' + split + '_ims.npy')
+        except IOError:
+            pass
+
+        edges = []
+        try:
+            with open(loc+name+'_' + split + '_edges.txt', 'rb') as f:
+                for line in f:
+                    edges.append(map(int, line.split()))
+        except IOError:
+            # TODO add edges for image-caption mapping
+            pass
+
+        dataset[split] = {'caps': caps, 'edges': edges}
+        if ims is not None:
+            dataset[split]['ims'] = ims
+
+    return dataset
 

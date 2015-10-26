@@ -13,7 +13,7 @@ import warnings
 import sys
 import time
 
-import homogeneous_data
+import hierarchy_data
 
 from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 
@@ -22,7 +22,7 @@ from layers import get_layer, param_init_fflayer, fflayer, param_init_gru, gru_l
 from optim import adam
 from model import init_params, build_model, build_sentence_encoder, build_image_encoder
 from vocab import build_dictionary
-from evaluation import i2t, t2i
+from evaluation import eval_accuracy
 from tools import encode_sentences, encode_images
 from datasets import load_dataset
 
@@ -86,11 +86,13 @@ def trainer(data='coco',  #f8k, f30k, coco
 
     # Load training and development sets
     print 'Loading dataset'
-    train, dev = load_dataset(data)[:2]
+    dataset = load_dataset(data)
+    train = dataset['train']
+    dev = dataset['dev']
 
     # Create and save dictionary
     print 'Creating dictionary'
-    worddict = build_dictionary(train[0]+dev[0])[0]
+    worddict = build_dictionary(train['caps']+dev['caps'])[0]
     n_words = len(worddict)
     model_options['n_words'] = n_words
     print 'Dictionary size: ' + str(n_words)
@@ -137,10 +139,6 @@ def trainer(data='coco',  #f8k, f30k, coco
     trng, inps_se, sentences = build_sentence_encoder(tparams, model_options)
     f_senc = theano.function(inps_se, sentences, profile=False)
 
-    print 'Building image encoder'
-    trng, inps_ie, images = build_image_encoder(tparams, model_options)
-    f_ienc = theano.function(inps_ie, images, profile=False)
-
     print 'Building f_grad...',
     grads = tensor.grad(cost, wrt=itemlist(tparams))
     f_grad_norm = theano.function(inps, [(g**2).sum() for g in grads], profile=False)
@@ -165,30 +163,28 @@ def trainer(data='coco',  #f8k, f30k, coco
     print 'Optimization'
 
     # Each sentence in the minibatch have same length (for encoder)
-    train_iter = homogeneous_data.HomogeneousData([train[0], train[1]], batch_size=batch_size, maxlen=maxlen_w)
+    train_iter = hierarchy_data.HierarchyData(train, batch_size=batch_size, worddict=worddict, n_words=n_words)
+    dev = hierarchy_data.HierarchyData(dev, worddict=worddict, n_words=n_words)
+    test = hierarchy_data.HierarchyData(dataset['test'], worddict=worddict, n_words=n_words)
 
     uidx = 0
     curr = 0.
     n_samples = 0
+
+    dev_caps, dev_edges, dev_negatives = dev.all()
+    test_caps, test_edges, test_negatives = dev.all()
     
     for eidx in xrange(max_epochs):
 
         print 'Epoch ', eidx
 
-        for x, im in train_iter:
-            n_samples += len(x)
+        for x, mask, im, edges, negatives in train_iter:
+            n_samples += x.shape[1]
             uidx += 1
-
-            x, mask, im = homogeneous_data.prepare_data(x, im, worddict, maxlen=maxlen_w, n_words=n_words)
-
-            if x == None:
-                print 'Minibatch with zero sample under length ', maxlen_w
-                uidx -= 1
-                continue
 
             # Update
             ud_start = time.time()
-            cost = f_grad_shared(x, mask, im)
+            cost = f_grad_shared(x, mask, edges, negatives)
             f_update(lrate)
             ud = time.time() - ud_start
 
@@ -209,26 +205,34 @@ def trainer(data='coco',  #f8k, f30k, coco
                 curr_model['worddict'] = worddict
                 curr_model['word_idict'] = word_idict
                 curr_model['f_senc'] = f_senc
-                curr_model['f_ienc'] = f_ienc
+                #curr_model['f_ienc'] = f_ienc
 
-                ls = encode_sentences(curr_model, dev[0])
-                lim = encode_images(curr_model, dev[1])
 
-                (r1, r5, r10, medr) = t2i(lim, ls)
-                print "Text to image: %.1f, %.1f, %.1f, %.1f" % (r1, r5, r10, medr)
+                dev_s = encode_sentences(curr_model, dev_caps)
+                test_s = encode_sentences(curr_model, test_caps)
 
-                log.update({'R@1': r1, 'R@5': r5, 'R@10': r10, 'median_rank': medr}, n_samples)
+                accuracy = eval_accuracy(dev_s, dev_edges, dev_negatives, test_s, test_edges, test_negatives)
+                print("Accuracy: %.3f" % accuracy)
 
-                currscore = r1 + r5 + r10
-                if currscore > curr:
-                    curr = currscore
+                log.update({'Accuracy': accuracy}, n_samples)
 
-                    # Save model
-                    print 'Saving...',
-                    params = unzip(tparams)
-                    numpy.savez(saveto, **params)
-                    pkl.dump(model_options, open('%s.pkl'%saveto, 'wb'))
-                    print 'Done'
+                #lim = encode_images(curr_model, dev[1])
+
+                #(r1, r5, r10, medr) = t2i(lim, ls)
+                #print "Text to image: %.1f, %.1f, %.1f, %.1f" % (r1, r5, r10, medr)
+
+                #log.update({'R@1': r1, 'R@5': r5, 'R@10': r10, 'median_rank': medr}, n_samples)
+
+                #currscore = r1 + r5 + r10
+                #if currscore > curr:
+                #    curr = currscore
+
+                #    # Save model
+                #    print 'Saving...',
+                #    params = unzip(tparams)
+                #    numpy.savez(saveto, **params)
+                #    pkl.dump(model_options, open('%s.pkl'%saveto, 'wb'))
+                #    print 'Done'
 
         print 'Seen %d samples'%n_samples
 
