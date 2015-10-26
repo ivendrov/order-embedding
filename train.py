@@ -182,6 +182,8 @@ def trainer(data='coco',  #f8k, f30k, coco
             n_samples += x.shape[1]
             uidx += 1
 
+            print("Shape of input :" + str(x.shape))
+
             # Update
             ud_start = time.time()
             cost = f_grad_shared(x, mask, edges, negatives)

@@ -1,7 +1,7 @@
 import numpy
 import copy
 import sys
-from collections import defaultdict
+from collections import defaultdict, deque
 
 class HierarchyData():
 
@@ -12,7 +12,7 @@ class HierarchyData():
         self.worddict = worddict
         self.n_words = n_words
 
-        self.ancestors = defaultdict(set)
+        self.parents = defaultdict(set)
         self.num_vertices = len(data['caps'])
         if 'ims' in data:
             self.num_vertices += len(data['ims'])
@@ -21,31 +21,14 @@ class HierarchyData():
         self.reset()
 
     def prepare(self):
-
+        print("Preparing data...")
         # compute adjacency list
         edges = self.data['edges']
 
-        vertices = set()
-        parents = defaultdict(set)
         for edge in edges:
-            parents[edge[0]].add(edge[1])
-            vertices.add(edge[0])
-            vertices.add(edge[1])
+            self.parents[edge[0]].add(edge[1])
 
-
-
-
-        # compute transitive closure of parent relation
-
-        def dfs(start, cur):
-            if start != cur:
-                self.ancestors[start].add(cur)
-
-            for next in parents[cur]:
-                dfs(start, next)
-
-        for vertex in vertices:
-            dfs(vertex, vertex)
+        print("Done")
 
 
     def contrastive_negatives(self, edges, max_index):
@@ -72,17 +55,29 @@ class HierarchyData():
     def up_closure(self, indices):
         """ returns up-closure of the given list of indices, under the hierarchy, as well as all edges,
         with edge indices local to the returned up-closure """
-        closure = set(indices)
-        edges = set()
+
+        closure = set(indices)  # maintain dict of global index to local index
+
+        # recursive algorithm, with caching
+        ancestors = dict()
+
+
+        def getAncestors(i):
+            if i not in ancestors:
+                ancestors[i] = set(self.parents[i])
+                for n in self.parents[i]:
+                    ancestors[i] |= getAncestors(n)
+
+            return ancestors[i]
+
         for index in indices:
-            closure |= self.ancestors[index]
-            for a in self.ancestors[index]:
-                edges.add((index, a))
+            closure |= getAncestors(index)
 
         closure = list(closure)
         to_local = dict(map(reversed, enumerate(closure)))
 
-        edges = [(to_local[i], to_local[j]) for (i, j) in edges]
+         # get edges
+        edges = [(to_local[i], to_local[a]) for (i, As) in ancestors.iteritems() for a in As]
 
         return closure, edges
 
@@ -96,6 +91,7 @@ class HierarchyData():
 
 
     def next(self):
+        print("Preprocessing next batch...")
         indices = []
 
         while len(indices) < self.batch_size:
@@ -112,6 +108,7 @@ class HierarchyData():
 
         x, x_mask = self.prepare_caps(indices)
 
+        print("Done")
         return x, x_mask, None, edges, negatives
 
 
@@ -122,6 +119,7 @@ class HierarchyData():
 
         caps = []
         for i in indices:
+            print(i)
             caps.append(self.data['caps'][i])
 
         return caps, edges, negatives
