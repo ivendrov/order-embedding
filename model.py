@@ -48,7 +48,7 @@ def contrastive_loss(margin, s, edges, negatives):
     return (pos_costs.sum() + neg_costs.sum()) / (edges.shape[0] + negatives.shape[0])
 
 
-def build_model(tparams, options):                                                                                           
+def build_model(tparams, options):
     """
     Computation graph for the model
     """
@@ -77,6 +77,15 @@ def build_model(tparams, options):
     cost = contrastive_loss(options['margin'], sents, edges, negatives)
 
     return trng, [x, mask, edges, negatives], cost
+
+
+def build_errors(tparams, options):
+    feats = tensor.matrix('feats', dtype='float32')
+    edges = tensor.matrix('edges', dtype='int64')
+
+    errors = hierarchical_error(feats[edges])
+    return [feats, edges], errors
+
 
 def build_sentence_encoder(tparams, options):
     """

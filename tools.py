@@ -119,3 +119,21 @@ def encode_images(model, IM):
     return images
 
 
+def compute_errors(model, feats, edges):
+    """
+    Computes errors for each edge, given a matrix of features.
+    """
+    errors = numpy.zeros(len(edges))
+    dim = model['options']['dim']
+    batchsize = int(5e8 / 4 / (2*dim))  # max number of edges to handle at once, in order to use at most 500 MB of memory
+    numbatches = len(edges) / batchsize + 1
+    for minibatch in range(numbatches):
+        errors[minibatch::numbatches] = model['h_error'](feats, edges[minibatch::numbatches])
+
+    return errors
+
+
+
+
+
+
