@@ -30,20 +30,20 @@ def init_params(options):
 
     return params
 
-def hierarchical_error(edges):
+def hierarchical_error(edges, options):
     specific = edges[:, 0, :]
     general = edges[:, 1, :]
-    return tensor.maximum(0, general-specific + 1e-5).norm(1, 1)
+    return tensor.maximum(0, general-specific + options['eps']).norm(1, 1)
 
-def contrastive_loss(margin, s, edges, negatives):
+def contrastive_loss(options, s, edges, negatives):
     """
     Compute contrastive loss
     """
     pos = s[edges]
     neg = s[negatives]
 
-    pos_costs = hierarchical_error(pos)
-    neg_costs = tensor.maximum(0, margin - hierarchical_error(neg))
+    pos_costs = hierarchical_error(pos, options)
+    neg_costs = tensor.maximum(0, options['margin'] - hierarchical_error(neg, options))
 
     return (pos_costs.sum() + neg_costs.sum()) / (edges.shape[0] + negatives.shape[0])
 
@@ -74,7 +74,7 @@ def build_model(tparams, options):
     sents = abs(proj[0][-1])
 
     # Compute loss
-    cost = contrastive_loss(options['margin'], sents, edges, negatives)
+    cost = contrastive_loss(options, sents, edges, negatives)
 
     return trng, [x, mask, edges, negatives], cost
 
@@ -83,7 +83,7 @@ def build_errors(tparams, options):
     feats = tensor.matrix('feats', dtype='float32')
     edges = tensor.matrix('edges', dtype='int64')
 
-    errors = hierarchical_error(feats[edges])
+    errors = hierarchical_error(feats[edges], options)
     return [feats, edges], errors
 
 

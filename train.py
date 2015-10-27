@@ -43,6 +43,7 @@ def trainer(data='coco',  #f8k, f30k, coco
             saveto='/ais/gobi3/u/rkiros/uvsmodels/coco.npz',
             validFreq=100,
             lrate=0.01,
+            eps=1e-7,
             name='anon',
             overfit=False,
             reload_=False):
@@ -65,6 +66,7 @@ def trainer(data='coco',  #f8k, f30k, coco
     model_options['saveto'] = saveto
     model_options['validFreq'] = validFreq
     model_options['lrate'] = lrate
+    model_options['eps'] = eps
     model_options['reload_'] = reload_
 
 
@@ -216,7 +218,7 @@ def trainer(data='coco',  #f8k, f30k, coco
                 curr_model['h_error'] = h_error
 
                 # encode sentences efficiently
-                dev_s = encode_sentences(curr_model, dev_caps, batch_size=512)
+                dev_s = encode_sentences(curr_model, dev_caps, batch_size=batch_size)
 
                 # compute errors
                 dev_errs = compute_errors(curr_model, dev_s, dev_edges)
