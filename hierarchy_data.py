@@ -39,13 +39,17 @@ class HierarchyData():
 
     def contrastive_negatives(self, edges, max_index):
         """ generate negatives by randomly replacing one of the indices in each edge"""
-        N = edges.shape[0]
+        N = len(edges)
         r = numpy.random.rand(N) > 0.5
         mask = numpy.vstack((r, r == 0)).T
         random_indices = numpy.random.randint(0, max_index, size=N)
         negs = numpy.copy(edges)
         negs[mask] = random_indices
-        return negs
+
+        edge_set = set((edges[i][0], edges[i][1]) for i in range(N))
+        indices = [i for i in range(N) if (negs[i][0], negs[i][1]) not in edge_set]
+
+        return negs[indices]
 
 
 

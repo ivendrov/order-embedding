@@ -110,6 +110,16 @@ def trainer(data='coco',  #f8k, f30k, coco
     word_idict[0] = '<eos>'
     word_idict[1] = 'UNK'
 
+
+    print 'Loading data'
+    # Each sentence in the minibatch have same length (for encoder)
+    train_iter = hierarchy_data.HierarchyData(train, batch_size=batch_size, worddict=worddict, n_words=n_words)
+    dev = hierarchy_data.HierarchyData(dev, worddict=worddict, n_words=n_words)
+    #test = hierarchy_data.HierarchyData(dataset['test'], worddict=worddict, n_words=n_words)
+
+    dev_caps, dev_edges, dev_target = dev.all()
+    #test_caps, test_edges, test_target = dev.all()
+
     print 'Building model'
     params = init_params(model_options)
     # reload parameters
@@ -170,17 +180,11 @@ def trainer(data='coco',  #f8k, f30k, coco
 
     print 'Optimization'
 
-    # Each sentence in the minibatch have same length (for encoder)
-    train_iter = hierarchy_data.HierarchyData(train, batch_size=batch_size, worddict=worddict, n_words=n_words)
-    dev = hierarchy_data.HierarchyData(dev, worddict=worddict, n_words=n_words)
-    #test = hierarchy_data.HierarchyData(dataset['test'], worddict=worddict, n_words=n_words)
-
     uidx = 0
     curr = 0.
     n_samples = 0
 
-    dev_caps, dev_edges, dev_target = dev.all()
-    #test_caps, test_edges, test_target = dev.all()
+
     
     for eidx in xrange(max_epochs):
 
