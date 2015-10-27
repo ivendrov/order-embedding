@@ -17,24 +17,41 @@ class HierarchyData():
         self.num_vertices = len(data['caps'])
         if 'ims' in data:
             self.num_vertices += len(data['ims'])
+        self.prepare()
+        self.reset()
 
+
+    def change_maxlen(self, maxlen):
+        self.maxlen = maxlen
         self.prepare()
         self.reset()
 
     def prepare(self):
+        # compute set of vertices with len <= max_len
+        allowed = set()
+
+        if self.maxlen is None:
+            allowed.update(range(self.num_vertices))
+        else:
+            allowed.update(i for (i, cap) in enumerate(self.data['caps']) if len(cap.split()) <= self.maxlen)
+
+
+
         print("Preparing data...")
         # compute adjacency list, and leaves
         edges = self.data['edges']
-        leaves = set(edge[0] for edge in edges)
+        leaves = set(edge[0] for edge in edges if edge[0] in allowed)
 
         for edge in edges:
-            self.parents[edge[0]].add(edge[1])
-            if edge[1] in leaves:
-                leaves.remove(edge[1])
+            if edge[0] in allowed and edge[1] in allowed:
+                self.parents[edge[0]].add(edge[1])
+                if edge[1] in leaves:
+                    leaves.remove(edge[1])
 
         self.leaves = list(leaves)
         print("Split has " + str(len(self.leaves)) + " leaves")
         print("Done")
+
 
 
     def contrastive_negatives(self, edges, max_index):
@@ -90,8 +107,6 @@ class HierarchyData():
         edges = [(to_local[i], to_local[a]) for (i, As) in ancestors.iteritems() for a in As]
 
         return closure, edges
-
-
 
 
     def reset(self):

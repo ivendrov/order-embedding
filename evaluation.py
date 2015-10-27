@@ -44,9 +44,14 @@ def eval_accuracy(e1, t1, e2, t2):
     # find best threshold on the first dev set, use it to evaluate accuracy on the second
     thresh = best_threshold(e1, t1)
     pred = e2 <= thresh
-    accuracy = float((pred == t2).astype('float32').mean())
+    correct = (pred == t2)
 
-    return accuracy
+    accuracy = float(correct.astype('float32').mean())
+
+    wrong_indices = numpy.logical_not(correct).nonzero()[0]
+    wrong_preds = pred[wrong_indices]
+
+    return accuracy, wrong_indices, wrong_preds
 
 
 def i2t(images, captions, npts=None):

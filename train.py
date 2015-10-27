@@ -37,7 +37,7 @@ def trainer(data='coco',  #f8k, f30k, coco
             dispFreq=10,
             decay_c=0.,
             grad_clip=2.,
-            maxlen_w=100,
+            maxlen_w=None,
             optimizer='adam',
             batch_size = 128,
             saveto='/ais/gobi3/u/rkiros/uvsmodels/coco.npz',
@@ -46,7 +46,7 @@ def trainer(data='coco',  #f8k, f30k, coco
             eps=1e-7,
             name='anon',
             overfit=False,
-            reload_=False):
+            load_from = None):
 
     # Model options
     model_options = {}
@@ -67,7 +67,7 @@ def trainer(data='coco',  #f8k, f30k, coco
     model_options['validFreq'] = validFreq
     model_options['lrate'] = lrate
     model_options['eps'] = eps
-    model_options['reload_'] = reload_
+    model_options['load_from'] = load_from
 
 
     import datetime
@@ -81,11 +81,16 @@ def trainer(data='coco',  #f8k, f30k, coco
 
     print model_options
 
-    # reload options
-    if reload_ and os.path.exists(saveto):
-        print 'reloading...' + saveto
-        with open('%s.pkl'%saveto, 'rb') as f:
-            models_options = pkl.load(f)
+    # reload options, without overwriting existing ones
+    if load_from is not None and os.path.exists(load_from):
+        print 'reloading...' + load_from
+        with open('%s.pkl'%load_from, 'rb') as f:
+            old_model_options = pkl.load(f)
+            for k, v in old_model_options.iteritems():
+                if k not in model_options:
+                    model_options[k] = v
+
+
 
     # Load training and development sets
     print 'Loading dataset'
@@ -113,8 +118,8 @@ def trainer(data='coco',  #f8k, f30k, coco
 
     print 'Loading data'
     # Each sentence in the minibatch have same length (for encoder)
-    train_iter = hierarchy_data.HierarchyData(train, batch_size=batch_size, worddict=worddict, n_words=n_words)
-    dev = hierarchy_data.HierarchyData(dev, worddict=worddict, n_words=n_words)
+    train_iter = hierarchy_data.HierarchyData(train, batch_size=batch_size, worddict=worddict, n_words=n_words, maxlen=maxlen_w)
+    dev = hierarchy_data.HierarchyData(dev, worddict=worddict, n_words=n_words, maxlen=maxlen_w)
     #test = hierarchy_data.HierarchyData(dataset['test'], worddict=worddict, n_words=n_words)
 
     dev_caps, dev_edges, dev_target = dev.all()
@@ -123,8 +128,8 @@ def trainer(data='coco',  #f8k, f30k, coco
     print 'Building model'
     params = init_params(model_options)
     # reload parameters
-    if reload_ and os.path.exists(saveto):
-        params = load_params(saveto, params)
+    if load_from is not None and os.path.exists(load_from):
+        params = load_params(load_from, params)
 
     tparams = init_tparams(params)
 
@@ -207,7 +212,7 @@ def trainer(data='coco',  #f8k, f30k, coco
             if numpy.mod(uidx, dispFreq) == 0:
                 print 'Epoch ', eidx, 'Update ', uidx, 'Cost ', cost, 'UD ', ud
                 log.update({'Error': float(cost)}, n_samples)
-                print("Fraction of RNN computation wasted: " + str(1 - mask.mean()))
+                # print("Fraction of RNN computation wasted: " + str(1 - mask.mean()))
 
 
             if numpy.mod(uidx, validFreq) == 0:
@@ -228,7 +233,7 @@ def trainer(data='coco',  #f8k, f30k, coco
                 dev_errs = compute_errors(curr_model, dev_s, dev_edges)
 
                 # compute accuracy
-                accuracy = eval_accuracy(dev_errs, dev_target, dev_errs, dev_target)
+                accuracy, wrong_indices, wrong_preds = eval_accuracy(dev_errs, dev_target, dev_errs, dev_target)
                 print("Accuracy: %.3f" % accuracy)
                 log.update({'Accuracy': accuracy}, n_samples)
 
@@ -240,6 +245,16 @@ def trainer(data='coco',  #f8k, f30k, coco
                     numpy.savez(saveto, **params)
                     pkl.dump(model_options, open('%s.pkl'%saveto, 'wb'))
                     print 'Done'
+
+                    print(len(dev_caps))
+                    print(len(wrong_indices))
+                    print(len(wrong_preds))
+                    # output errors
+                    with open('%s_errors.txt'%saveto, 'wb') as f:
+                        f.write('Prediction\tCaption\n')
+                        for i in range(len(wrong_indices)):
+                            edge = dev_edges[wrong_indices[i]]
+                            f.write(str(wrong_preds[i]) + '\t' + dev_caps[edge[0]] + '\t>\t' + dev_caps[edge[1]] + '\n')
 
         print 'Seen %d samples'%n_samples
 
