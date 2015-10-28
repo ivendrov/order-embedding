@@ -33,7 +33,7 @@ def init_params(options):
 def hierarchical_error(edges, options):
     specific = edges[:, 0, :]
     general = edges[:, 1, :]
-    return tensor.maximum(0, general-specific + options['eps']).norm(1, 1)
+    return tensor.maximum(0, general-specific + options['eps']).norm(options['norm'], 1)
 
 def contrastive_loss(options, s, edges, negatives):
     """

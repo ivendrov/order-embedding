@@ -44,6 +44,7 @@ def trainer(data='coco',  #f8k, f30k, coco
             validFreq=100,
             lrate=0.01,
             eps=1e-7,
+            norm=1,
             name='anon',
             overfit=False,
             load_from = None):
@@ -67,6 +68,7 @@ def trainer(data='coco',  #f8k, f30k, coco
     model_options['validFreq'] = validFreq
     model_options['lrate'] = lrate
     model_options['eps'] = eps
+    model_options['norm'] = norm
     model_options['load_from'] = load_from
 
 
@@ -246,9 +248,6 @@ def trainer(data='coco',  #f8k, f30k, coco
                     pkl.dump(model_options, open('%s.pkl'%saveto, 'wb'))
                     print 'Done'
 
-                    print(len(dev_caps))
-                    print(len(wrong_indices))
-                    print(len(wrong_preds))
                     # output errors
                     with open('%s_errors.txt'%saveto, 'wb') as f:
                         f.write('Prediction\tCaption\n')
