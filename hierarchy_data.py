@@ -5,12 +5,14 @@ from collections import defaultdict, deque
 
 class HierarchyData():
 
-    def __init__(self, data, worddict, batch_size=128, maxlen=None, n_words=10000):
+    def __init__(self, data, worddict, batch_size=128, maxlen=None, n_words=10000, max_edges_per_batch=None, max_nodes_per_batch=None):
         self.data = data
         self.batch_size = batch_size
         self.maxlen = maxlen
+        self.max_nodes_per_batch = max_nodes_per_batch
         self.worddict = worddict
         self.n_words = n_words
+        self.max_edges_per_batch = max_edges_per_batch
         self.leaves = []
 
         self.parents = defaultdict(set)
@@ -79,7 +81,7 @@ class HierarchyData():
 
 
 
-    def up_closure(self, indices):
+    def up_closure(self, indices, max_indices=None):
         """ returns up-closure of the given list of indices, under the hierarchy, as well as all edges,
         with edge indices local to the returned up-closure """
 
@@ -101,10 +103,13 @@ class HierarchyData():
             closure |= getAncestors(index)
 
         closure = list(closure)
+        if max_indices is not None:
+            del closure[max_indices:]
+
         to_local = dict(map(reversed, enumerate(closure)))
 
          # get edges
-        edges = [(to_local[i], to_local[a]) for (i, As) in ancestors.iteritems() for a in As]
+        edges = [(to_local[i], to_local[a]) for (i, As) in ancestors.iteritems() for a in As if i in to_local and a in to_local]
 
         return closure, edges
 
@@ -126,9 +131,13 @@ class HierarchyData():
                 raise StopIteration()
 
 
-        indices, edges = self.up_closure(indices)
+        indices, edges = self.up_closure(indices, self.max_nodes_per_batch)
         edges = numpy.array(edges)
         negatives = self.contrastive_negatives(edges, len(indices))
+
+        if self.max_edges_per_batch is not None:
+            edges = edges[:self.max_edges_per_batch]
+            negatives = negatives[:self.max_edges_per_batch]
 
         x, x_mask = self.prepare_caps(indices)
         return x, x_mask, None, edges, negatives

@@ -45,6 +45,8 @@ def trainer(data='coco',  #f8k, f30k, coco
             lrate=0.01,
             eps=1e-7,
             norm=1,
+            max_edges_per_batch=50000,
+            max_nodes_per_batch=1500,
             name='anon',
             overfit=False,
             load_from = None):
@@ -120,7 +122,9 @@ def trainer(data='coco',  #f8k, f30k, coco
 
     print 'Loading data'
     # Each sentence in the minibatch have same length (for encoder)
-    train_iter = hierarchy_data.HierarchyData(train, batch_size=batch_size, worddict=worddict, n_words=n_words, maxlen=maxlen_w)
+    train_iter = hierarchy_data.HierarchyData(train, batch_size=batch_size, worddict=worddict,
+                                              n_words=n_words, maxlen=maxlen_w, max_edges_per_batch=max_edges_per_batch,
+                                              max_nodes_per_batch=max_nodes_per_batch)
     dev = hierarchy_data.HierarchyData(dev, worddict=worddict, n_words=n_words, maxlen=maxlen_w)
     #test = hierarchy_data.HierarchyData(dataset['test'], worddict=worddict, n_words=n_words)
 
@@ -236,7 +240,7 @@ def trainer(data='coco',  #f8k, f30k, coco
 
                 # compute accuracy
                 accuracy, wrong_indices, wrong_preds = eval_accuracy(dev_errs, dev_target, dev_errs, dev_target)
-                print("Accuracy: %.3f" % accuracy)
+                print("Accuracy: %.5f" % accuracy)
                 log.update({'Accuracy': accuracy}, n_samples)
 
                 if accuracy > curr:
