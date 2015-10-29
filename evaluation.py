@@ -90,38 +90,25 @@ def i2t(images, captions, npts=None):
     medr = numpy.floor(numpy.median(ranks)) + 1
     return (r1, r5, r10, medr)
 
-def t2i(images, captions, npts=None):
+def t2i(c2i):
     """
     Text->Images (Image Search)
-    Images: (5N, K) matrix of images
-    Captions: (5N, K) matrix of captions
+    c2i: (5N, N) matrix of caption to image errors
     """
-    if npts == None:
-        npts = images.shape[0] / 5
-    ims = numpy.array([images[i] for i in range(0, len(images), 5)])
-    ims = numpy.expand_dims(ims, 0)
 
     num_zero = 0
 
-    ranks = numpy.zeros(5 * npts)
-    for index in range(npts):
+    ranks = numpy.zeros(c2i.shape[0])
 
-        # Get query captions
-        queries = captions[5*index : 5*index + 5]
-        queries = numpy.expand_dims(queries, 1)
+    for i in range(len(ranks)):
+        d_i = c2i[i]
+        inds = numpy.argsort(d_i)
 
-        # Compute scores
-        d = numpy.linalg.norm(numpy.maximum(0, queries - ims), ord=1, axis=2)
+        rank = numpy.where(inds == i/5)[0][0]
+        ranks[i] = rank
 
-        for i in range(len(d)):
-            d_i = d[i]
-            inds = numpy.argsort(d_i)
-
-            ranks[5 * index + i] = numpy.where(inds == index)[0][0]
-            rank = ranks[5*index + i]
-
-            if d_i[inds[rank]] == 0:
-                num_zero += 1
+        if d_i[inds[rank]] == 0:
+            num_zero += 1
 
 
     # Compute metrics
@@ -129,5 +116,5 @@ def t2i(images, captions, npts=None):
     r5 = 100.0 * len(numpy.where(ranks < 5)[0]) / len(ranks)
     r10 = 100.0 * len(numpy.where(ranks < 10)[0]) / len(ranks)
     medr = numpy.floor(numpy.median(ranks)) + 1
-    print("Fraction of GT pairs with score zero: " + str(num_zero) + " / " + str(captions.shape[0]))
+    print("Fraction of GT pairs with score zero: " + str(num_zero) + " / " + str(c2i.shape[0]))
     return (r1, r5, r10, medr)

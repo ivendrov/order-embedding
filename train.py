@@ -22,7 +22,7 @@ from layers import get_layer, param_init_fflayer, fflayer, param_init_gru, gru_l
 from optim import adam
 from model import init_params, build_model, build_sentence_encoder, build_image_encoder, build_errors
 from vocab import build_dictionary
-from evaluation import eval_accuracy
+from evaluation import eval_accuracy, t2i
 from tools import encode_sentences, encode_images, compute_errors
 from datasets import load_dataset
 
@@ -128,7 +128,8 @@ def trainer(data='coco',  #f8k, f30k, coco
     dev = hierarchy_data.HierarchyData(dev, worddict=worddict, n_words=n_words, maxlen=maxlen_w)
     #test = hierarchy_data.HierarchyData(dataset['test'], worddict=worddict, n_words=n_words)
 
-    dev_caps, dev_edges, dev_target = dev.all()
+    dev_caps, dev_ims, dev_edges, dev_target, dev_rank_edges = dev.all()
+    print(dev_rank_edges.shape)
     #test_caps, test_edges, test_target = dev.all()
 
     print 'Building model'
@@ -163,6 +164,10 @@ def trainer(data='coco',  #f8k, f30k, coco
     print 'Building sentence encoder'
     trng, inps_se, sentences = build_sentence_encoder(tparams, model_options)
     f_senc = theano.function(inps_se, sentences, profile=False)
+
+    print 'Building image encoder'
+    trng, inps_ie, images = build_image_encoder(tparams, model_options)
+    f_ienc = theano.function(inps_ie, images, profile=False)
 
     print 'Building hierarchical error'
     inps_he, errors = build_errors(tparams, model_options)
@@ -207,7 +212,7 @@ def trainer(data='coco',  #f8k, f30k, coco
 
             # Update
             ud_start = time.time()
-            cost = f_grad_shared(x, mask, edges, negatives)
+            cost = f_grad_shared(x, mask, im, edges, negatives)
             f_update(lrate)
             ud = time.time() - ud_start
 
@@ -229,19 +234,28 @@ def trainer(data='coco',  #f8k, f30k, coco
                 curr_model['worddict'] = worddict
                 curr_model['word_idict'] = word_idict
                 curr_model['f_senc'] = f_senc
-                #curr_model['f_ienc'] = f_ienc
+                curr_model['f_ienc'] = f_ienc
                 curr_model['h_error'] = h_error
 
                 # encode sentences efficiently
                 dev_s = encode_sentences(curr_model, dev_caps, batch_size=batch_size)
+                dev_i = encode_images(curr_model, dev_ims)
+
 
                 # compute errors
-                dev_errs = compute_errors(curr_model, dev_s, dev_edges)
+                dev_errs = compute_errors(curr_model, numpy.vstack((dev_s, dev_i)), dev_edges)
 
                 # compute accuracy
                 accuracy, wrong_indices, wrong_preds = eval_accuracy(dev_errs, dev_target, dev_errs, dev_target)
                 print("Accuracy: %.5f" % accuracy)
                 log.update({'Accuracy': accuracy}, n_samples)
+
+                # compute ranking error
+                n_dev = len(dev_i)
+                ranking_errors = compute_errors(curr_model, numpy.vstack((dev_s, dev_i)), dev_rank_edges)
+                (r1, r5, r10, medr) = t2i(ranking_errors.reshape((5*n_dev, n_dev)))
+                print "Text to image: %.1f, %.1f, %.1f, %.1f" % (r1, r5, r10, medr)
+                log.update({'R@1': r1, 'R@5': r5, 'R@10': r10, 'median_rank': medr}, n_samples)
 
                 if accuracy > curr:
                     curr = accuracy
@@ -257,7 +271,11 @@ def trainer(data='coco',  #f8k, f30k, coco
                         f.write('Prediction\tCaption\n')
                         for i in range(len(wrong_indices)):
                             edge = dev_edges[wrong_indices[i]]
-                            f.write(str(wrong_preds[i]) + '\t' + dev_caps[edge[0]] + '\t>\t' + dev_caps[edge[1]] + '\n')
+                            c = dev_caps[edge[0]] if edge[0] < len(dev_caps) else "Image #" + str(edge[0] - len(dev_caps))
+                            p = dev_caps[edge[1]] if edge[1] < len(dev_caps) else "Image #" + str(edge[1] - len(dev_caps))
+                            f.write(str(wrong_preds[i]) + '\t' + c + '\t>\t' + p + '\n')
+
+
 
         print 'Seen %d samples'%n_samples
 

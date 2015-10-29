@@ -26,7 +26,7 @@ def init_params(options):
                                               nin=options['dim_word'], dim=options['dim'])
 
     # Image encoder
-    # params = get_layer('ff')[0](options, params, prefix='ff_image', nin=options['dim_image'], nout=options['dim'])
+    params = get_layer('ff')[0](options, params, prefix='ff_image', nin=options['dim_image'], nout=options['dim'])
 
     return params
 
@@ -58,6 +58,7 @@ def build_model(tparams, options):
     # description string: #words x #samples
     x = tensor.matrix('x', dtype='int64')
     mask = tensor.matrix('mask', dtype='float32')
+    im = tensor.matrix('im', dtype='float32')
     edges = tensor.matrix('edges', dtype='int64')
     negatives = tensor.matrix('negatives', dtype='int64')
 
@@ -71,12 +72,18 @@ def build_model(tparams, options):
     proj = get_layer(options['encoder'])[1](tparams, emb, None, options,
                                             prefix='encoder',
                                             mask=mask)
-    sents = abs(proj[0][-1])
+    sents = proj[0][-1]
+
+    # Encode images (source)
+    images = get_layer('ff')[1](tparams, im, options, prefix='ff_image', activ='linear')
+
+    # combine captions and images
+    feats = abs(tensor.concatenate((sents, images), axis=0))
 
     # Compute loss
-    cost = contrastive_loss(options, sents, edges, negatives)
+    cost = contrastive_loss(options, feats, edges, negatives)
 
-    return trng, [x, mask, edges, negatives], cost
+    return trng, [x, mask, im, edges, negatives], cost
 
 
 def build_errors(tparams, options):
