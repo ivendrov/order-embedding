@@ -4,7 +4,7 @@ f = open('node.idx', 'rb')
 lines = f.readlines()
 f.close()
 
-# put "139222   ride small boat" at the very end"
+# fix node.idx by putting "139222   ride small boat" at the very end
 idx = 139222
 badline = lines[idx]
 lines = lines[:idx] + lines[idx+1:]
@@ -18,6 +18,8 @@ lines.append(badline)
 with open('node.idx', 'wb') as f:
     f.writelines(lines)
 
+def tok2line(toks):
+    return '\t'.join(toks) + '\n'
 
 # replace in train and the global node-tree.txt (neither 139222 occurs in dev and test)
 splits = ['', 'train/']
@@ -37,7 +39,7 @@ for split in splits:
                 if int(tokens[2]) == idx:
                     tokens[2] = str(new_idx)
 
-                new_line = '\t'.join(tokens) + '\n'
+                new_line = tok2line(tokens)
                 print("Replacing")
                 print(lines[i])
                 print("with")
@@ -48,6 +50,19 @@ for split in splits:
         f.writelines(lines)
 
 
+# replace in node-cap.map
+f = open('node-cap.map', 'rb')
+lines = f.readlines()
+f.close()
+
+badline = lines[idx]
+tokens = badline.strip().split('\t')
+bad_capid = tokens[-1]
+lines[idx] = tok2line(tokens[:-1])
+lines.append(tok2line([str(len(lines)), bad_capid]))
+
+with open('node-cap.map', 'wb') as f:
+    f.writelines(lines)
 
 
 
