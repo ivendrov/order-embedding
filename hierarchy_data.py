@@ -2,6 +2,7 @@ import numpy
 import copy
 import sys
 from collections import defaultdict, deque
+import random
 
 class HierarchyData():
 
@@ -77,7 +78,7 @@ class HierarchyData():
 
 
 
-    def up_closure(self, image_ids, max_indices=None):
+    def up_closure(self, image_ids, max_indices=None, only_one_caption=False):
         """ returns the first max_indices (or all) caption ids above the given image ids, under the hierarchy, as well as all edges,
             with edge indices local to the returned array:
                 0 .. len(caption_ids) for captions,
@@ -92,16 +93,19 @@ class HierarchyData():
         # recursive algorithm, with caching
         ancestors = dict()
 
-        def getAncestors(i):
+        def getAncestors(i, choice=False):
             if i not in ancestors:
-                ancestors[i] = set(self.parents[i])
-                for n in self.parents[i]:
-                    ancestors[i] |= getAncestors(n)
+                if choice:
+                    ancestors[i] = {random.choice(list(self.parents[i]))}
+                else:
+                    ancestors[i] = set(self.parents[i])
+                #for n in self.parents[i]:
+                #    ancestors[i] |= getAncestors(n)
 
             return ancestors[i]
 
         for index in image_ids:
-            closure |= getAncestors(index)
+            closure |= getAncestors(index, only_one_caption)
 
         closure = list(closure)
         if max_indices is not None:
