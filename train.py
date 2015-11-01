@@ -47,6 +47,8 @@ def trainer(data='coco',  #f8k, f30k, coco
             norm=1,
             max_edges_per_batch=50000,
             max_nodes_per_batch=1500,
+            num_contrastive=1,
+            onlycaps=False,
             name='anon',
             overfit=False,
             load_from = None):
@@ -66,9 +68,11 @@ def trainer(data='coco',  #f8k, f30k, coco
     model_options['maxlen_w'] = maxlen_w
     model_options['optimizer'] = optimizer
     model_options['batch_size'] = batch_size
+    model_options['num_contrastive'] = num_contrastive
     model_options['saveto'] = saveto
     model_options['validFreq'] = validFreq
     model_options['lrate'] = lrate
+    model_options['onlycaps'] = onlycaps
     model_options['eps'] = eps
     model_options['norm'] = norm
     model_options['load_from'] = load_from
@@ -124,8 +128,9 @@ def trainer(data='coco',  #f8k, f30k, coco
     # Each sentence in the minibatch have same length (for encoder)
     train_iter = hierarchy_data.HierarchyData(train, batch_size=batch_size, worddict=worddict,
                                               n_words=n_words, maxlen=maxlen_w, max_edges_per_batch=max_edges_per_batch,
-                                              max_nodes_per_batch=max_nodes_per_batch)
-    dev = hierarchy_data.HierarchyData(dev, worddict=worddict, n_words=n_words, maxlen=maxlen_w)
+                                              max_nodes_per_batch=max_nodes_per_batch, num_contrastive=num_contrastive,
+                                              onlycaps=onlycaps)
+    dev = hierarchy_data.HierarchyData(dev, worddict=worddict, n_words=n_words, maxlen=maxlen_w, onlycaps=onlycaps)
     #test = hierarchy_data.HierarchyData(dataset['test'], worddict=worddict, n_words=n_words)
 
     dev_caps, dev_ims, dev_edges, dev_target, dev_rank_edges = dev.all()

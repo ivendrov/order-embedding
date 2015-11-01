@@ -45,7 +45,7 @@ def contrastive_loss(options, s, edges, negatives):
     pos_costs = hierarchical_error(pos, options)
     neg_costs = tensor.maximum(0, options['margin'] - hierarchical_error(neg, options))
 
-    return (pos_costs.sum() + neg_costs.sum()) / (edges.shape[0] + negatives.shape[0])
+    return 0.5 * (pos_costs.sum() / edges.shape[0]) + 0.5 * (neg_costs.sum() / negatives.shape[0])
 
 
 def build_model(tparams, options):

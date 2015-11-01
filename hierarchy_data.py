@@ -6,17 +6,18 @@ import random
 
 class HierarchyData():
 
-    def __init__(self, data, worddict, batch_size=128, maxlen=None, n_words=10000, max_edges_per_batch=None, max_nodes_per_batch=None):
+    def __init__(self, data, worddict, batch_size=128, maxlen=None, n_words=10000, max_edges_per_batch=None, max_nodes_per_batch=None, num_contrastive=1, onlycaps=False):
         self.data = data
         self.batch_size = batch_size
         self.maxlen = maxlen
+        self.num_contrastive = num_contrastive
         self.max_nodes_per_batch = max_nodes_per_batch
         self.worddict = worddict
         self.n_words = n_words
         self.max_edges_per_batch = max_edges_per_batch
         self.num_captions = len(self.data['caps'])
         self.image_ids = range(self.num_captions, self.num_captions + len(self.data['ims']))
-
+        self.onlycaps = onlycaps
         self.parents = defaultdict(set)
         self.prepare()
         self.reset()
@@ -41,8 +42,10 @@ class HierarchyData():
     def prepare(self):
         # 1. compute parents relation:
         #   a. edges between text nodes
-        for edge in self.data['edges']:
-            self.parents[edge[0]].add(edge[1])
+        if not self.onlycaps:
+            for edge in self.data['edges']:
+                self.parents[edge[0]].add(edge[1])
+
         #   b. edges between images and captions
         for i, caps in enumerate(self.data['image2caption']):
             for cap in caps:
@@ -55,17 +58,20 @@ class HierarchyData():
 
     def contrastive_negatives(self, edges, max_index):
         """ generate negatives by randomly replacing one of the indices in each edge"""
-        N = len(edges)
-        r = numpy.random.rand(N) > 0.5
-        mask = numpy.vstack((r, r == 0)).T
-        random_indices = numpy.random.randint(0, max_index, size=N)
-        negs = numpy.copy(edges)
-        negs[mask] = random_indices
+        negs_list = []
+        for k in range(self.num_contrastive):
+            N = len(edges)
+            r = numpy.random.rand(N) > 0.5
+            mask = numpy.vstack((r, r == 0)).T
+            random_indices = numpy.random.randint(0, max_index, size=N)
+            negs = numpy.copy(edges)
+            negs[mask] = random_indices
 
-        edge_set = set((edges[i][0], edges[i][1]) for i in range(N))
-        indices = [i for i in range(N) if (negs[i][0], negs[i][1]) not in edge_set]
+            edge_set = set((edges[i][0], edges[i][1]) for i in range(N))
+            indices = [i for i in range(N) if (negs[i][0], negs[i][1]) not in edge_set]
+            negs_list.append(negs[indices])
 
-        return negs[indices]
+        return numpy.vstack(negs_list)
 
 
 
@@ -99,8 +105,8 @@ class HierarchyData():
                     ancestors[i] = {random.choice(list(self.parents[i]))}
                 else:
                     ancestors[i] = set(self.parents[i])
-                #for n in self.parents[i]:
-                #    ancestors[i] |= getAncestors(n)
+                for n in self.parents[i]:
+                    ancestors[i] |= getAncestors(n)
 
             return ancestors[i]
 
@@ -138,7 +144,7 @@ class HierarchyData():
                 raise StopIteration()
 
         image_ids = indices
-        all_ids, edges, _ = self.up_closure(image_ids, self.max_nodes_per_batch)
+        all_ids, edges, _ = self.up_closure(image_ids, self.max_nodes_per_batch, only_one_caption=True)
         edges = numpy.array(edges)
         negatives = self.contrastive_negatives(edges, len(all_ids))
 
