@@ -78,7 +78,7 @@ def build_model(tparams, options):
     images = get_layer('ff')[1](tparams, im, options, prefix='ff_image', activ='linear')
 
     # combine captions and images
-    feats = abs(tensor.concatenate((sents, images), axis=0))
+    feats = tensor.concatenate((sents, images), axis=0)
 
     # Compute loss
     cost = contrastive_loss(options, feats, edges, negatives)
@@ -116,7 +116,7 @@ def build_sentence_encoder(tparams, options):
     proj = get_layer(options['encoder'])[1](tparams, emb, None, options,
                                             prefix='encoder',
                                             mask=mask)
-    sents = abs(proj[0][-1])
+    sents = proj[0][-1]
 
     return trng, [x, mask], sents
 
@@ -133,7 +133,7 @@ def build_image_encoder(tparams, options):
 
     # Encode images
     images = get_layer('ff')[1](tparams, im, options, prefix='ff_image', activ='linear')
-    images = abs(images)
+    images = images
     
     return trng, [im], images
 
