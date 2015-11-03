@@ -32,7 +32,6 @@ def init_params(options):
 
 
 def symmetric_loss(s, im, options):
-    s = l2norm(s)
     im = l2norm(im)
     margin = options['margin']
     scores = tensor.dot(im, s.T)
@@ -105,7 +104,7 @@ def build_sentence_encoder(tparams, options):
     proj = get_layer(options['encoder'])[1](tparams, emb, None, options,
                                             prefix='encoder',
                                             mask=mask)
-    sents = l2norm(proj[0][-1])
+    sents = proj[0][-1]
 
     return trng, [x, mask], sents
 
