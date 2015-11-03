@@ -54,46 +54,10 @@ def eval_accuracy(e1, t1, e2, t2):
     return accuracy, wrong_indices, wrong_preds
 
 
-def i2t(images, captions, npts=None):
-    """
-    Images->Text (Image Annotation)
-    Images: (5N, K) matrix of images
-    Captions: (5N, K) matrix of captions
-    """
-    if npts == None:
-        npts = images.shape[0] / 5
-    index_list = []
-
-    ranks = numpy.zeros(npts)
-    for index in range(npts):
-
-        # Get query image
-        im = images[5 * index].reshape(1, images.shape[1])
-
-        # Compute scores
-        d = numpy.linalg.norm(numpy.maximum(0, captions - im), ord=1, axis=1).flatten()
-        inds = numpy.argsort(d)
-        index_list.append(inds[0])
-
-        # Score
-        rank = 1e20
-        for i in range(5*index, 5*index + 5, 1):
-            tmp = numpy.where(inds == i)[0][0]
-            if tmp < rank:
-                rank = tmp
-        ranks[index] = rank
-
-    # Compute metrics
-    r1 = 100.0 * len(numpy.where(ranks < 1)[0]) / len(ranks)
-    r5 = 100.0 * len(numpy.where(ranks < 5)[0]) / len(ranks)
-    r10 = 100.0 * len(numpy.where(ranks < 10)[0]) / len(ranks)
-    medr = numpy.floor(numpy.median(ranks)) + 1
-    return (r1, r5, r10, medr)
-
 def t2i(c2i):
     """
     Text->Images (Image Search)
-    c2i: (5N, N) matrix of caption to image errors
+    c2i: (N, N) matrix of caption to image errors
     """
 
     num_zero = 0
@@ -104,7 +68,7 @@ def t2i(c2i):
         d_i = c2i[i]
         inds = numpy.argsort(d_i)
 
-        rank = numpy.where(inds == i/5)[0][0]
+        rank = numpy.where(inds == i)[0][0]
         ranks[i] = rank
 
         if d_i[inds[rank]] == 0:

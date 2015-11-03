@@ -92,39 +92,9 @@ class HierarchyData():
 
             Also returns the global-to-local mapping
         """
+        caps = map(lambda i: random.choice(list(self.parents[i])), image_ids)
 
-        # compute all captions above the given image ids
-        closure = set()
-
-        # recursive algorithm, with caching
-        ancestors = dict()
-
-        def getAncestors(i, choice=False):
-            if i not in ancestors:
-                if choice:
-                    ancestors[i] = {random.choice(list(self.parents[i]))}
-                else:
-                    ancestors[i] = set(self.parents[i])
-                for n in list(ancestors[i]):
-                    ancestors[i] |= getAncestors(n)
-
-            return ancestors[i]
-
-        for index in image_ids:
-            closure |= getAncestors(index, only_one_caption)
-
-        closure = list(closure)
-        if max_indices is not None:
-            del closure[max_indices:]
-
-        closure += image_ids  # put image ids at the end
-
-        to_local = dict(map(reversed, enumerate(closure)))
-
-        # get edges
-        edges = [(to_local[i], to_local[a]) for (i, As) in ancestors.iteritems() for a in As if i in to_local and a in to_local]
-
-        return closure, edges, to_local
+        return caps
 
 
     def reset(self):
@@ -144,41 +114,24 @@ class HierarchyData():
                 raise StopIteration()
 
         image_ids = indices
-        all_ids, edges, _ = self.up_closure(image_ids, self.max_nodes_per_batch, only_one_caption=True)
-        edges = numpy.array(edges)
-        negatives = self.contrastive_negatives(edges, len(all_ids))
+        caption_ids = self.up_closure(image_ids)
+        image_ids = map(lambda i: i - self.num_captions, image_ids)
 
-        if self.max_edges_per_batch is not None:
-            edges = edges[:self.max_edges_per_batch]
-            negatives = negatives[:self.max_edges_per_batch]
-
-        caption_ids, image_ids = self.split_modes(all_ids)
         x, x_mask = self.prepare_caps(caption_ids)
         im = self.data['ims'][numpy.array(image_ids)]
 
-        return x, x_mask, im, edges, negatives
+        return x, x_mask, im
 
 
     def all(self):
-        all_ids, edges, to_local = self.up_closure(self.image_ids)
-        edges = numpy.array(edges)
-        negatives = self.contrastive_negatives(edges, len(all_ids))
+        caption_ids = self.up_closure(self.image_ids)
 
-        caption_ids, image_ids = self.split_modes(all_ids)
         caps = []
         for i in caption_ids:
             caps.append(self.data['caps'][i])
 
-        target = numpy.hstack((numpy.ones(edges.shape[:1]), numpy.zeros(negatives.shape[:1])))
-        edges = numpy.vstack((edges, negatives))
 
-        # compute the 5N*N edges between all captions and all images
-        c_ids = [to_local[c] for cs in self.data['image2caption'] for c in cs]
-        i_ids = [to_local[i] for i in self.image_ids]
-        rank_edges = numpy.array([[i, c] for c in c_ids for i in i_ids])
-
-        return caps, self.data['ims'], edges, target, rank_edges
-
+        return caps, self.data['ims']
 
     def __iter__(self):
         return self

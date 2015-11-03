@@ -30,22 +30,23 @@ def init_params(options):
 
     return params
 
-def hierarchical_error(edges, options):
-    specific = edges[:, 0, :]
-    general = edges[:, 1, :]
-    return tensor.maximum(0, general-specific + options['eps']).norm(options['norm'], 1)
 
-def contrastive_loss(options, s, edges, negatives):
-    """
-    Compute contrastive loss
-    """
-    pos = s[edges]
-    neg = s[negatives]
+def symmetric_loss(s, im, options):
+    s = l2norm(s)
+    im = l2norm(im)
+    margin = options['margin']
+    scores = tensor.dot(im, s.T)
+    diagonal = scores.diagonal()
+    # compare every diagonal score to scores in its column (i.e, all contrastive images for each sentence)
+    cost_s = tensor.maximum(0, margin - diagonal + scores)
+    # compare every diagonal score to scores in its row (i.e, all contrastive sentences for each image)
+    cost_im = tensor.maximum(0, margin - diagonal.reshape((-1, 1)) + scores)
 
-    pos_costs = hierarchical_error(pos, options)
-    neg_costs = tensor.maximum(0, options['margin'] - hierarchical_error(neg, options))
+    # clear diagonals
+    cost_s = fill_diagonal(cost_s, 0)
+    cost_im = fill_diagonal(cost_im, 0)
+    return cost_s.sum() + cost_im.sum()
 
-    return 0.5 * (pos_costs.sum() / edges.shape[0]) + 0.5 * (neg_costs.sum() / negatives.shape[0])
 
 
 def build_model(tparams, options):
@@ -59,8 +60,6 @@ def build_model(tparams, options):
     x = tensor.matrix('x', dtype='int64')
     mask = tensor.matrix('mask', dtype='float32')
     im = tensor.matrix('im', dtype='float32')
-    edges = tensor.matrix('edges', dtype='int64')
-    negatives = tensor.matrix('negatives', dtype='int64')
 
     n_timesteps = x.shape[0]
     n_samples = x.shape[1]
@@ -77,21 +76,11 @@ def build_model(tparams, options):
     # Encode images (source)
     images = get_layer('ff')[1](tparams, im, options, prefix='ff_image', activ='linear')
 
-    # combine captions and images
-    feats = tensor.concatenate((sents, images), axis=0)
-
     # Compute loss
-    cost = contrastive_loss(options, feats, edges, negatives)
+    cost = symmetric_loss(sents, images, options)
 
-    return trng, [x, mask, im, edges, negatives], cost
+    return trng, [x, mask, im], cost
 
-
-def build_errors(tparams, options):
-    feats = tensor.matrix('feats', dtype='float32')
-    edges = tensor.matrix('edges', dtype='int64')
-
-    errors = hierarchical_error(feats[edges], options)
-    return [feats, edges], errors
 
 
 def build_sentence_encoder(tparams, options):
@@ -116,7 +105,7 @@ def build_sentence_encoder(tparams, options):
     proj = get_layer(options['encoder'])[1](tparams, emb, None, options,
                                             prefix='encoder',
                                             mask=mask)
-    sents = proj[0][-1]
+    sents = l2norm(proj[0][-1])
 
     return trng, [x, mask], sents
 
@@ -133,7 +122,7 @@ def build_image_encoder(tparams, options):
 
     # Encode images
     images = get_layer('ff')[1](tparams, im, options, prefix='ff_image', activ='linear')
-    images = images
+    images = l2norm(images)
     
     return trng, [im], images
 

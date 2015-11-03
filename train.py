@@ -20,7 +20,7 @@ from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 from utils import *
 from layers import get_layer, param_init_fflayer, fflayer, param_init_gru, gru_layer
 from optim import adam
-from model import init_params, build_model, build_sentence_encoder, build_image_encoder, build_errors
+from model import init_params, build_model, build_sentence_encoder, build_image_encoder
 from vocab import build_dictionary
 from evaluation import eval_accuracy, t2i
 from tools import encode_sentences, encode_images, compute_errors
@@ -133,8 +133,8 @@ def trainer(data='coco',  #f8k, f30k, coco
     dev = hierarchy_data.HierarchyData(dev, worddict=worddict, n_words=n_words, maxlen=maxlen_w, onlycaps=onlycaps)
     #test = hierarchy_data.HierarchyData(dataset['test'], worddict=worddict, n_words=n_words)
 
-    dev_caps, dev_ims, dev_edges, dev_target, dev_rank_edges = dev.all()
-    print(dev_rank_edges.shape)
+    dev_caps, dev_ims = dev.all()
+
     #test_caps, test_edges, test_target = dev.all()
 
     print 'Building model'
@@ -174,10 +174,6 @@ def trainer(data='coco',  #f8k, f30k, coco
     trng, inps_ie, images = build_image_encoder(tparams, model_options)
     f_ienc = theano.function(inps_ie, images, profile=False)
 
-    print 'Building hierarchical error'
-    inps_he, errors = build_errors(tparams, model_options)
-    h_error = theano.function(inps_he, errors, profile=False)
-
     print 'Building f_grad...',
     grads = tensor.grad(cost, wrt=itemlist(tparams))
     f_grad_norm = theano.function(inps, [(g**2).sum() for g in grads], profile=False)
@@ -211,13 +207,13 @@ def trainer(data='coco',  #f8k, f30k, coco
 
         print 'Epoch ', eidx
 
-        for x, mask, im, edges, negatives in train_iter:
+        for x, mask, im in train_iter:
             n_samples += x.shape[1]
             uidx += 1
 
             # Update
             ud_start = time.time()
-            cost = f_grad_shared(x, mask, im, edges, negatives)
+            cost = f_grad_shared(x, mask, im)
             f_update(lrate)
             ud = time.time() - ud_start
 
@@ -240,7 +236,6 @@ def trainer(data='coco',  #f8k, f30k, coco
                 curr_model['word_idict'] = word_idict
                 curr_model['f_senc'] = f_senc
                 curr_model['f_ienc'] = f_ienc
-                curr_model['h_error'] = h_error
 
                 # encode sentences efficiently
                 dev_s = encode_sentences(curr_model, dev_caps, batch_size=batch_size)
@@ -248,37 +243,22 @@ def trainer(data='coco',  #f8k, f30k, coco
 
 
                 # compute errors
-                dev_errs = compute_errors(curr_model, numpy.vstack((dev_s, dev_i)), dev_edges)
-
-                # compute accuracy
-                accuracy, wrong_indices, wrong_preds = eval_accuracy(dev_errs, dev_target, dev_errs, dev_target)
-                print("Accuracy: %.5f" % accuracy)
-                log.update({'Accuracy': accuracy}, n_samples)
+                dev_errs = compute_errors(curr_model, dev_s, dev_i)
 
                 # compute ranking error
-                n_dev = len(dev_i)
-                ranking_errors = compute_errors(curr_model, numpy.vstack((dev_s, dev_i)), dev_rank_edges)
-                (r1, r5, r10, medr) = t2i(ranking_errors.reshape((5*n_dev, n_dev)))
+                (r1, r5, r10, medr) = t2i(dev_errs)
                 print "Text to image: %.1f, %.1f, %.1f, %.1f" % (r1, r5, r10, medr)
                 log.update({'R@1': r1, 'R@5': r5, 'R@10': r10, 'median_rank': medr}, n_samples)
 
-                if accuracy > curr:
-                    curr = accuracy
+                tot = r1 + r5 + r10
+                if tot > curr:
+                    curr = tot
                     # Save model
                     print 'Saving...',
                     params = unzip(tparams)
                     numpy.savez(saveto, **params)
                     pkl.dump(model_options, open('%s.pkl'%saveto, 'wb'))
                     print 'Done'
-
-                    # output errors
-                    with open('%s_errors.txt'%saveto, 'wb') as f:
-                        f.write('Prediction\tCaption\n')
-                        for i in range(len(wrong_indices)):
-                            edge = dev_edges[wrong_indices[i]]
-                            c = dev_caps[edge[0]] if edge[0] < len(dev_caps) else "Image #" + str(edge[0] - len(dev_caps))
-                            p = dev_caps[edge[1]] if edge[1] < len(dev_caps) else "Image #" + str(edge[1] - len(dev_caps))
-                            f.write(str(wrong_preds[i]) + '\t' + c + '\t>\t' + p + '\n')
 
 
 
