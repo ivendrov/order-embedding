@@ -34,17 +34,17 @@ def init_params(options):
 def symmetric_loss(s, im, options):
     im = l2norm(im)
     margin = options['margin']
+
     scores = tensor.dot(im, s.T)
     diagonal = scores.diagonal()
+
     # compare every diagonal score to scores in its column (i.e, all contrastive images for each sentence)
     cost_s = tensor.maximum(0, margin - diagonal + scores)
-    # compare every diagonal score to scores in its row (i.e, all contrastive sentences for each image)
-    cost_im = tensor.maximum(0, margin - diagonal.reshape((-1, 1)) + scores)
 
     # clear diagonals
     cost_s = fill_diagonal(cost_s, 0)
-    cost_im = fill_diagonal(cost_im, 0)
-    return cost_s.sum() + cost_im.sum()
+
+    return cost_s.sum()
 
 
 
