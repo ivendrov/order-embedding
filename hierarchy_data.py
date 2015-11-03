@@ -105,7 +105,7 @@ class HierarchyData():
                     ancestors[i] = {random.choice(list(self.parents[i]))}
                 else:
                     ancestors[i] = set(self.parents[i])
-                for n in self.parents[i]:
+                for n in list(ancestors[i]):
                     ancestors[i] |= getAncestors(n)
 
             return ancestors[i]
