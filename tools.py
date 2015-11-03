@@ -123,7 +123,11 @@ def compute_errors(model, s, im):
     """
     Computes errors between each sentence and caption
     """
-    return - numpy.dot(s, im.T)
+    errs = numpy.zeros((len(s), len(im)))
+    for i in range(len(s)):
+        errs[i] = numpy.maximum(0, s[i] - im).sum(axis=1).flatten()
+
+    return errs
 
 
 
