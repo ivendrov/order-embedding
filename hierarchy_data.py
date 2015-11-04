@@ -124,11 +124,12 @@ class HierarchyData():
 
 
     def all(self):
-        caption_ids = self.up_closure(self.image_ids)
-
         caps = []
-        for i in caption_ids:
-            caps.append(self.data['caps'][i])
+        for i, cs in enumerate(self.data['image2caption']):
+            for cap in cs:
+                caps.append(self.data['caps'][cap])
+
+        print("Number of captions in dataset: " + str(len(caps)))
 
 
         return caps, self.data['ims']

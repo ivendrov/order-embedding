@@ -57,7 +57,7 @@ def eval_accuracy(e1, t1, e2, t2):
 def t2i(c2i):
     """
     Text->Images (Image Search)
-    c2i: (N, N) matrix of caption to image errors
+    c2i: (5N, N) matrix of caption to image errors
     """
 
     num_zero = 0
@@ -68,7 +68,7 @@ def t2i(c2i):
         d_i = c2i[i]
         inds = numpy.argsort(d_i)
 
-        rank = numpy.where(inds == i)[0][0]
+        rank = numpy.where(inds == i/5)[0][0]
         ranks[i] = rank
 
         if d_i[inds[rank]] == 0:
@@ -80,5 +80,6 @@ def t2i(c2i):
     r5 = 100.0 * len(numpy.where(ranks < 5)[0]) / len(ranks)
     r10 = 100.0 * len(numpy.where(ranks < 10)[0]) / len(ranks)
     medr = numpy.floor(numpy.median(ranks)) + 1
+    meanr = ranks.mean() + 1
     print("Fraction of GT pairs with score zero: " + str(num_zero) + " / " + str(c2i.shape[0]))
-    return (r1, r5, r10, medr)
+    return (r1, r5, r10, medr, meanr)

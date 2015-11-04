@@ -30,8 +30,12 @@ def init_params(options):
 
     return params
 
+
 def symmetric_loss(s, im, options):
     im = l2norm(im)
+    if options['abs']:
+        im = abs(im)
+        s = abs(s)
     margin = options['margin']
 
     im = im.dimshuffle(('x', 0, 1))
@@ -109,6 +113,9 @@ def build_sentence_encoder(tparams, options):
                                             mask=mask)
     sents = proj[0][-1]
 
+    if options['abs']:
+        sents = abs(sents)
+
     return trng, [x, mask], sents
 
 def build_image_encoder(tparams, options):
@@ -125,6 +132,9 @@ def build_image_encoder(tparams, options):
     # Encode images
     images = get_layer('ff')[1](tparams, im, options, prefix='ff_image', activ='linear')
     images = l2norm(images)
+
+    if options['abs']:
+        images = abs(images)
     
     return trng, [im], images
 
