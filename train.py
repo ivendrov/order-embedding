@@ -48,6 +48,7 @@ def trainer(data='coco',  #f8k, f30k, coco
             max_edges_per_batch=50000,
             max_nodes_per_batch=1500,
             num_contrastive=1,
+            abs=False,
             onlycaps=False,
             name='anon',
             overfit=False,
@@ -72,6 +73,7 @@ def trainer(data='coco',  #f8k, f30k, coco
     model_options['saveto'] = saveto
     model_options['validFreq'] = validFreq
     model_options['lrate'] = lrate
+    model_options['abs'] = abs
     model_options['onlycaps'] = onlycaps
     model_options['eps'] = eps
     model_options['norm'] = norm
@@ -246,12 +248,12 @@ def trainer(data='coco',  #f8k, f30k, coco
                 dev_errs = compute_errors(curr_model, dev_s, dev_i)
 
                 # compute ranking error
-                (r1, r5, r10, medr) = t2i(dev_errs)
-                print "Text to image: %.1f, %.1f, %.1f, %.1f" % (r1, r5, r10, medr)
-                log.update({'R@1': r1, 'R@5': r5, 'R@10': r10, 'median_rank': medr}, n_samples)
+                (r1, r5, r10, medr, meanr) = t2i(dev_errs)
+                print "Text to image: %.1f, %.1f, %.1f, %.1f, %.1f" % (r1, r5, r10, medr, meanr)
+                log.update({'R@1': r1, 'R@5': r5, 'R@10': r10, 'median_rank': medr, 'mean_rank': meanr}, n_samples)
 
-                tot = r1 + r5 + r10
-                if tot > curr:
+                tot = meanr
+                if tot < curr:
                     curr = tot
                     # Save model
                     print 'Saving...',

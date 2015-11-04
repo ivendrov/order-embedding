@@ -127,8 +127,9 @@ class HierarchyData():
         caption_ids = self.up_closure(self.image_ids)
 
         caps = []
-        for i in caption_ids:
-            caps.append(self.data['caps'][i])
+        for i in self.image_ids:
+            for j in self.parents[i]:
+                caps.append(self.data['caps'][j])
 
 
         return caps, self.data['ims']
