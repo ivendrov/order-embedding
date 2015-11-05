@@ -44,7 +44,7 @@ def symmetric_loss(s, im, options):
     im = im.dimshuffle(('x', 0, 1))
     s = s.dimshuffle((0, 'x', 1))
     diffs = s - im + options['eps']
-    scores = tensor.pow(tensor.maximum(0, diffs), 2).sum(axis=2)
+    scores = tensor.pow(tensor.maximum(0, diffs), options['norm']).sum(axis=2)
 
     diagonal = scores.diagonal()
 
