@@ -8,6 +8,7 @@ import numpy
 
 from collections import OrderedDict
 from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
+from theano.ifelse import ifelse
 
 from utils import _p, ortho_weight, norm_weight, xavier_weight, tanh, l2norm
 from layers import get_layer, param_init_fflayer, fflayer, param_init_gru, gru_layer
@@ -31,8 +32,12 @@ def init_params(options):
     return params
 
 
+
+
 def symmetric_loss(s, im, options):
     im = l2norm(im)
+
+
     if options['abs']:
         im = abs(im)
         s = abs(s)
@@ -41,7 +46,7 @@ def symmetric_loss(s, im, options):
     im = im.dimshuffle(('x', 0, 1))
     s = s.dimshuffle((0, 'x', 1))
     diffs = s - im + options['eps']
-    scores = tensor.maximum(0, diffs).sum(axis=2)
+    scores = tensor.pow(tensor.maximum(0, diffs), 2).sum(axis=2)
 
     diagonal = scores.diagonal()
 
@@ -51,7 +56,8 @@ def symmetric_loss(s, im, options):
     # clear diagonals
     cost_s = fill_diagonal(cost_s, 0)
 
-    return cost_s.sum()
+
+    return cost_s.sum() + diagonal.sum()
 
 
 

@@ -243,9 +243,18 @@ def trainer(data='coco',  #f8k, f30k, coco
                 dev_s = encode_sentences(curr_model, dev_caps, batch_size=batch_size)
                 dev_i = encode_images(curr_model, dev_ims)
 
+                s_norm = float(numpy.linalg.norm(dev_s, axis=1).mean())
+                i_norm = float(numpy.linalg.norm(dev_i, axis=1).mean())
+                print("Mean Norms: sentence %.3f, image %.3f" % (s_norm, i_norm))
+                log.update({'MeanSentenceNorm': s_norm, 'MeanImageNorm': i_norm}, n_samples)
+
 
                 # compute errors
                 dev_errs = compute_errors(curr_model, dev_s, dev_i)
+
+                mean_err = float(dev_errs.mean())
+                print("Mean error: %.3f" % mean_err)
+                log.update({'MeanError': mean_err}, n_samples)
 
                 # compute ranking error
                 (r1, r5, r10, medr, meanr) = t2i(dev_errs)
