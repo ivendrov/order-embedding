@@ -131,7 +131,6 @@ class HierarchyData():
 
         print("Number of captions in dataset: " + str(len(caps)))
 
-
         return caps, self.data['ims']
 
     def __iter__(self):

@@ -33,10 +33,8 @@ def init_params(options):
 
 
 
-
 def symmetric_loss(s, im, options):
     im = l2norm(im)
-
 
     if options['abs']:
         im = abs(im)
