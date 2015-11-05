@@ -261,8 +261,8 @@ def trainer(data='coco',  #f8k, f30k, coco
                 print "Text to image: %.1f, %.1f, %.1f, %.1f, %.1f" % (r1, r5, r10, medr, meanr)
                 log.update({'R@1': r1, 'R@5': r5, 'R@10': r10, 'median_rank': medr, 'mean_rank': meanr}, n_samples)
 
-                tot = meanr
-                if tot < curr:
+                tot = r1 + r5 + r10
+                if tot > curr:
                     curr = tot
                     # Save model
                     print 'Saving...',

@@ -50,12 +50,14 @@ def symmetric_loss(s, im, options):
 
     # compare every diagonal score to scores in its column (i.e, all contrastive images for each sentence)
     cost_s = tensor.maximum(0, margin - scores + diagonal)
+    cost_im = tensor.maximum(0, margin - scores + diagonal.reshape((-1,1)))
 
     # clear diagonals
-    cost_s = fill_diagonal(cost_s, 0)
+    cost_tot = cost_s + cost_im
+    cost_tot = fill_diagonal(cost_tot, 0)
 
 
-    return cost_s.sum() + diagonal.sum()
+    return cost_tot.sum() + 2 * diagonal.sum()
 
 
 
