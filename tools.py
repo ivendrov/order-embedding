@@ -115,19 +115,14 @@ def encode_images(model, IM):
     """
     Encode images into the joint embedding space
     """
-    images = model['f_ienc'](IM)
-    return images
+    return model['f_ienc'](IM)
 
 
 def compute_errors(model, s, im):
     """
     Computes errors between each sentence and caption
     """
-    errs = numpy.zeros((len(s), len(im)))
-    for i in range(len(s)):
-        errs[i] = numpy.power(numpy.maximum(0, s[i] - im), model['options']['norm']).sum(axis=1).flatten()
-
-    return errs
+    return model['f_err'](s, im)
 
 
 

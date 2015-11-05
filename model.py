@@ -31,7 +31,8 @@ def init_params(options):
 
     return params
 
-
+def hierarchical_errors(s, im, options):
+    return tensor.pow(tensor.maximum(0, s - im + options['eps']), options['norm'])
 
 def symmetric_loss(s, im, options):
     im = l2norm(im)
@@ -43,8 +44,7 @@ def symmetric_loss(s, im, options):
 
     im = im.dimshuffle(('x', 0, 1))
     s = s.dimshuffle((0, 'x', 1))
-    diffs = s - im + options['eps']
-    scores = tensor.pow(tensor.maximum(0, diffs), options['norm']).sum(axis=2)
+    scores = hierarchical_errors(s, im, options).sum(axis=2)
 
     diagonal = scores.diagonal()
 
@@ -143,5 +143,23 @@ def build_image_encoder(tparams, options):
         images = abs(images)
     
     return trng, [im], images
+
+
+def build_errors(options):
+    """ Given sentence and image embeddings, compute the score matrix """
+    # input features
+    s = tensor.matrix('s', dtype='float32')
+    im = tensor.matrix('im', dtype='float32')
+
+    # trick to make theano not optimize this into a single matrix op, and overflow memory
+    indices = tensor.arange(s.shape[0])
+
+    # have to do a map in order not to overflow memory here
+    errs, _ = theano.map(lambda i, s, im: hierarchical_errors(s[i], im, options).sum(axis=1).flatten(),
+                      sequences=[indices],
+                      non_sequences=[s, im])
+
+    return [s, im], errs
+
 
 

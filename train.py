@@ -20,7 +20,7 @@ from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 from utils import *
 from layers import get_layer, param_init_fflayer, fflayer, param_init_gru, gru_layer
 from optim import adam
-from model import init_params, build_model, build_sentence_encoder, build_image_encoder
+from model import init_params, build_model, build_sentence_encoder, build_image_encoder, build_errors
 from vocab import build_dictionary
 from evaluation import eval_accuracy, t2i
 from tools import encode_sentences, encode_images, compute_errors
@@ -181,6 +181,12 @@ def trainer(data='coco',  #f8k, f30k, coco
     f_grad_norm = theano.function(inps, [(g**2).sum() for g in grads], profile=False)
     f_weight_norm = theano.function([], [(t**2).sum() for k,t in tparams.iteritems()], profile=False)
 
+    print 'Building errors..'
+    inps_err, errs = build_errors(model_options)
+    f_err = theano.function(inps_err, errs, profile=False)
+
+
+
     if grad_clip > 0.:
         g2 = 0.
         for g in grads:
@@ -238,6 +244,7 @@ def trainer(data='coco',  #f8k, f30k, coco
                 curr_model['word_idict'] = word_idict
                 curr_model['f_senc'] = f_senc
                 curr_model['f_ienc'] = f_ienc
+                curr_model['f_err'] = f_err
 
                 # encode sentences efficiently
                 dev_s = encode_sentences(curr_model, dev_caps, batch_size=batch_size)
