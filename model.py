@@ -34,30 +34,39 @@ def init_params(options):
 def hierarchical_errors(s, im, options):
     return tensor.pow(tensor.maximum(0, s - im + options['eps']), options['norm'])
 
-def symmetric_loss(s, im, options):
+def contrastive_loss(s, im, options):
     im = l2norm(im)
+    if options['method'] == 'cosine':
+        s = l2norm(s)
 
     if options['abs']:
         im = abs(im)
         s = abs(s)
     margin = options['margin']
 
-    im = im.dimshuffle(('x', 0, 1))
-    s = s.dimshuffle((0, 'x', 1))
-    scores = hierarchical_errors(s, im, options).sum(axis=2)
+    scores = None
+    if options['method'] == 'hierarchy':
+        im = im.dimshuffle(('x', 0, 1))
+        s = s.dimshuffle((0, 'x', 1))
+        scores = hierarchical_errors(s, im, options).sum(axis=2)
+    elif options['method'] == 'cosine':
+        scores = tensor.dot(im, s.T)
+
 
     diagonal = scores.diagonal()
 
-    # compare every diagonal score to scores in its column (i.e, all contrastive images for each sentence)
-    cost_s = tensor.maximum(0, margin - scores + diagonal)
-    cost_im = tensor.maximum(0, margin - scores + diagonal.reshape((-1,1)))
+    cost_s = tensor.maximum(0, margin - scores + diagonal)  # compare every diagonal score to scores in its column (all contrastive images for each sentence)
+    cost_im = tensor.maximum(0, margin - scores + diagonal.reshape((-1, 1)))  # all contrastive sentences for each image
 
     # clear diagonals
     cost_tot = cost_s + cost_im
     cost_tot = fill_diagonal(cost_tot, 0)
+    # compare every diagonal score to scores in its column (i.e, all contrastive images for each sentence)
 
-
-    return cost_tot.sum() + 2 * diagonal.sum()
+    if options['method'] == 'hierarchy':
+        return cost_tot.sum() + 2 * diagonal.sum()
+    else:
+        return cost_tot.sum()
 
 
 
@@ -89,7 +98,7 @@ def build_model(tparams, options):
     images = get_layer('ff')[1](tparams, im, options, prefix='ff_image', activ='linear')
 
     # Compute loss
-    cost = symmetric_loss(sents, images, options)
+    cost = contrastive_loss(sents, images, options)
 
     return trng, [x, mask, im], cost
 
@@ -122,6 +131,9 @@ def build_sentence_encoder(tparams, options):
     if options['abs']:
         sents = abs(sents)
 
+    if options['method'] == 'cosine':
+        sents = l2norm(sents)
+
     return trng, [x, mask], sents
 
 def build_image_encoder(tparams, options):
@@ -151,13 +163,17 @@ def build_errors(options):
     s = tensor.matrix('s', dtype='float32')
     im = tensor.matrix('im', dtype='float32')
 
-    # trick to make theano not optimize this into a single matrix op, and overflow memory
-    indices = tensor.arange(s.shape[0])
+    errs = None
+    if options['method'] == 'hierarchy':
+        # trick to make theano not optimize this into a single matrix op, and overflow memory
+        indices = tensor.arange(s.shape[0])
 
-    # have to do a map in order not to overflow memory here
-    errs, _ = theano.map(lambda i, s, im: hierarchical_errors(s[i], im, options).sum(axis=1).flatten(),
-                      sequences=[indices],
-                      non_sequences=[s, im])
+        # have to do a map in order not to overflow memory here
+        errs, _ = theano.map(lambda i, s, im: hierarchical_errors(s[i], im, options).sum(axis=1).flatten(),
+                          sequences=[indices],
+                          non_sequences=[s, im])
+    else:
+        errs = tensor.dot(s, im.T)
 
     return [s, im], errs
 

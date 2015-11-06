@@ -29,6 +29,7 @@ from datasets import load_dataset
 # main trainer
 def trainer(data='coco',  #f8k, f30k, coco
             cnn='ryan',
+            method=None,
             margin=0.2,
             dim=1024,
             dim_image=4096,
@@ -53,11 +54,13 @@ def trainer(data='coco',  #f8k, f30k, coco
             onlycaps=False,
             name='anon',
             overfit=False,
-            load_from = None):
+            load_from=None):
 
     # Model options
     model_options = {}
     model_options['data'] = data
+    model_options['cnn'] = cnn
+    model_options['method'] = method
     model_options['margin'] = margin
     model_options['dim'] = dim
     model_options['dim_image'] = dim_image
