@@ -13,7 +13,7 @@ def path_to_data(name):
         return '/u/vendrov/qanda/hierarchy/'
 #-----------------------------------------------------------------------------#
 
-def load_dataset(name='f8k', load_train=True):
+def load_dataset(name='f8k', load_train=True, cnn=None):
     """
     Load captions and image features
     Possible options: f8k, f30k, coco
@@ -36,7 +36,7 @@ def load_dataset(name='f8k', load_train=True):
                 caps.append(line.strip())
         ims = None
         try:
-            ims = numpy.load(loc+name+'_' + split + '_ims.npy')
+            ims = numpy.load(loc + cnn + '/' + 'f30k_' + split + '_ims.npy')
         except IOError:
             pass
 

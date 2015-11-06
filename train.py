@@ -28,6 +28,7 @@ from datasets import load_dataset
 
 # main trainer
 def trainer(data='coco',  #f8k, f30k, coco
+            cnn='ryan',
             margin=0.2,
             dim=1024,
             dim_image=4096,
@@ -104,7 +105,7 @@ def trainer(data='coco',  #f8k, f30k, coco
 
     # Load training and development sets
     print 'Loading dataset'
-    dataset = load_dataset(data, load_train=not overfit)
+    dataset = load_dataset(data, load_train=not overfit, cnn=cnn)
     train = dataset['dev'] if overfit else dataset['train']
 
     dev = dataset['dev']
