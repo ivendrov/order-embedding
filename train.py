@@ -39,7 +39,6 @@ def trainer(data='coco',  #f8k, f30k, coco
             dispFreq=10,
             decay_c=0.,
             grad_clip=2.,
-            maxlen_w=None,
             optimizer='adam',
             batch_size = 128,
             saveto='/ais/gobi3/u/rkiros/uvsmodels/coco.npz',
@@ -47,13 +46,8 @@ def trainer(data='coco',  #f8k, f30k, coco
             lrate=0.01,
             eps=1e-7,
             norm=1,
-            max_edges_per_batch=50000,
-            max_nodes_per_batch=1500,
-            num_contrastive=1,
             abs=False,
-            onlycaps=False,
             name='anon',
-            overfit=False,
             load_from=None):
 
     # Model options
@@ -70,15 +64,12 @@ def trainer(data='coco',  #f8k, f30k, coco
     model_options['dispFreq'] = dispFreq
     model_options['decay_c'] = decay_c
     model_options['grad_clip'] = grad_clip
-    model_options['maxlen_w'] = maxlen_w
     model_options['optimizer'] = optimizer
     model_options['batch_size'] = batch_size
-    model_options['num_contrastive'] = num_contrastive
     model_options['saveto'] = saveto
     model_options['validFreq'] = validFreq
     model_options['lrate'] = lrate
     model_options['abs'] = abs
-    model_options['onlycaps'] = onlycaps
     model_options['eps'] = eps
     model_options['norm'] = norm
     model_options['load_from'] = load_from
@@ -108,9 +99,8 @@ def trainer(data='coco',  #f8k, f30k, coco
 
     # Load training and development sets
     print 'Loading dataset'
-    dataset = load_dataset(data, load_train=not overfit, cnn=cnn)
-    train = dataset['dev'] if overfit else dataset['train']
-
+    dataset = load_dataset(data, load_train=True, cnn=cnn)
+    train = dataset['train']
     dev = dataset['dev']
 
     # Create and save dictionary
@@ -131,17 +121,10 @@ def trainer(data='coco',  #f8k, f30k, coco
 
 
     print 'Loading data'
-    # Each sentence in the minibatch have same length (for encoder)
     train_iter = hierarchy_data.HierarchyData(train, batch_size=batch_size, worddict=worddict,
-                                              n_words=n_words, maxlen=maxlen_w, max_edges_per_batch=max_edges_per_batch,
-                                              max_nodes_per_batch=max_nodes_per_batch, num_contrastive=num_contrastive,
-                                              onlycaps=onlycaps)
-    dev = hierarchy_data.HierarchyData(dev, worddict=worddict, n_words=n_words, maxlen=maxlen_w, onlycaps=onlycaps)
-    #test = hierarchy_data.HierarchyData(dataset['test'], worddict=worddict, n_words=n_words)
-
+                                              n_words=n_words)
+    dev = hierarchy_data.HierarchyData(dev, worddict=worddict, n_words=n_words)
     dev_caps, dev_ims = dev.all()
-
-    #test_caps, test_edges, test_target = dev.all()
 
     print 'Building model'
     params = init_params(model_options)
@@ -236,7 +219,6 @@ def trainer(data='coco',  #f8k, f30k, coco
             if numpy.mod(uidx, dispFreq) == 0:
                 print 'Epoch ', eidx, 'Update ', uidx, 'Cost ', cost, 'UD ', ud
                 log.update({'Error': float(cost)}, n_samples)
-                # print("Fraction of RNN computation wasted: " + str(1 - mask.mean()))
 
 
             if numpy.mod(uidx, validFreq) == 0:
