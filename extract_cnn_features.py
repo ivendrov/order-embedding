@@ -1,23 +1,18 @@
 import caffe
+import json
 import numpy
-import h5py
-import os
-import numpy
-import math
+from collections import defaultdict
 import sklearn.preprocessing
 from PIL import ImageFile
+import os
 ImageFile.LOAD_TRUNCATED_IMAGES = True  # needed for coco train
 
 
-def image_list(split):
-    if split == 'dev':
-        split = 'val'
 
-    image_list_file = '/ais/gobi3/u/rkiros/uvsdata/f30k/flickr30k_%s.txt' % split
-    with open(image_list_file, 'r') as f:
-        return map(lambda l: '/ais/gobi3/u/rkiros/flickr30k/images/' + l.strip(), f.readlines())
-
-
+image_loc = {
+    'f30k': '/ais/gobi3/u/rkiros/flickr30k/images/',
+    'coco': '/ais/gobi3/datasets/mscoco/images/'
+}
 
 
 nets = {
@@ -30,24 +25,40 @@ nets = {
             }
 }
 
-output_dir = '/u/vendrov/qanda/hierarchy/denotimages/'
+root_dir = '/u/vendrov/qanda/hierarchy/'
+
+
+def process_dataset(dataset, net, gpu_id):
+    data_dir = root_dir + dataset + '/'
+    data = json.load(open(data_dir + 'dataset_%s.json' % dataset, 'r'))
+
+    splits = defaultdict(list)
+    for im in data['images']:
+        split = im['split']
+        if split == 'restval':
+            split = 'train'
+        splits[split].append(image_loc[dataset] + im['filepath'] + '/' + im['filename'])
+
+    for name, filenames in splits.items():
+        run(dataset + '_' + name, filenames, net, gpu_id, data_dir)
 
 
 
 
-def run(split, net, gpu_id):
+
+
+
+
+def run(split_name, filenames, net, gpu_id, output_dir):
     """ Extracts CNN features
-
-    :param split: the name of the split to use
+    :param split_name: name of the split to use
+    :param filenames: list of filenames for images
     :param net: name of the CNN to extract features with
-    :param output_dir: the npy file to store the features in
+    :param output_dir: the directory to store the features in
     :param gpu_id: gpu ID to use to run computation
     """
     net_data = nets[net]
     layer = net_data['features_layer']
-
-    # load image names
-    filenames = image_list(split)
 
     # load caffe net
     caffe.set_mode_gpu()
@@ -69,7 +80,7 @@ def run(split, net, gpu_id):
     print("Shape of features to be computed: " + str(feat_shape))
 
     feats = {}
-    for key in ['images', 'images_relu', 'images_oversample', 'images_relu_oversample']:
+    for key in ['images_relu', 'images_relu_oversample']:
         feats[key] = numpy.zeros(feat_shape).astype('float32')
 
 
@@ -112,7 +123,7 @@ def run(split, net, gpu_id):
         except OSError:
             pass
 
-        numpy.save(method_dir + '/f30k_%s_ims.npy' % split, f)
+        numpy.save(method_dir + '/%s_ims.npy' % split_name, f)
 
 
 
