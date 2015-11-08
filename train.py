@@ -22,7 +22,7 @@ from layers import get_layer, param_init_fflayer, fflayer, param_init_gru, gru_l
 from optim import adam
 from model import init_params, build_model, build_sentence_encoder, build_image_encoder, build_errors
 from vocab import build_dictionary
-from evaluation import eval_accuracy, t2i
+from evaluation import eval_accuracy, t2i, i2t
 from tools import encode_sentences, encode_images, compute_errors
 from datasets import load_dataset
 
@@ -44,6 +44,7 @@ def trainer(data='coco',  #f8k, f30k, coco
             batch_size = 128,
             saveto='/ais/gobi3/u/rkiros/uvsmodels/coco.npz',
             validFreq=100,
+            diagonal_weight=2,  # weight of diagonal objective
             lrate=0.01,
             eps=1e-7,
             norm=1,
@@ -66,6 +67,7 @@ def trainer(data='coco',  #f8k, f30k, coco
     model_options['dispFreq'] = dispFreq
     model_options['decay_c'] = decay_c
     model_options['grad_clip'] = grad_clip
+    model_options['diagonal_weight'] = diagonal_weight
     model_options['optimizer'] = optimizer
     model_options['batch_size'] = batch_size
     model_options['saveto'] = saveto
@@ -253,8 +255,11 @@ def trainer(data='coco',  #f8k, f30k, coco
 
                 # compute ranking error
                 (r1, r5, r10, medr, meanr) = t2i(dev_errs)
+                (r1i, r5i, r10i, medri, meanri) = i2t(dev_errs)
                 print "Text to image: %.1f, %.1f, %.1f, %.1f, %.1f" % (r1, r5, r10, medr, meanr)
                 log.update({'R@1': r1, 'R@5': r5, 'R@10': r10, 'median_rank': medr, 'mean_rank': meanr}, n_samples)
+                print "Image to text: %.1f, %.1f, %.1f, %.1f, %.1f" % (r1i, r5i, r10i, medri, meanri)
+                log.update({'Image2Caption_R@1': r1i, 'Image2Caption_R@5': r5i, 'Image2CaptionR@10': r10i, 'Image2Caption_median_rank': medri, 'Image2Caption_mean_rank': meanri}, n_samples)
 
                 tot = r1 + r5 + r10
                 if tot > curr:

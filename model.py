@@ -64,7 +64,7 @@ def contrastive_loss(s, im, options):
     # compare every diagonal score to scores in its column (i.e, all contrastive images for each sentence)
 
     if options['method'] == 'hierarchy':
-        return cost_tot.sum() + 2 * diagonal.sum()
+        return cost_tot.sum() + options['diagonal_weight'] * diagonal.sum()
     else:
         return cost_tot.sum()
 
