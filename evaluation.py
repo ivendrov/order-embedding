@@ -60,8 +60,6 @@ def t2i(c2i):
     c2i: (5N, N) matrix of caption to image errors
     """
 
-    num_zero = 0
-
     ranks = numpy.zeros(c2i.shape[0])
 
     for i in range(len(ranks)):
@@ -71,8 +69,29 @@ def t2i(c2i):
         rank = numpy.where(inds == i/5)[0][0]
         ranks[i] = rank
 
-        if d_i[inds[rank]] == 0:
-            num_zero += 1
+    # Compute metrics
+    r1 = 100.0 * len(numpy.where(ranks < 1)[0]) / len(ranks)
+    r5 = 100.0 * len(numpy.where(ranks < 5)[0]) / len(ranks)
+    r10 = 100.0 * len(numpy.where(ranks < 10)[0]) / len(ranks)
+    medr = numpy.floor(numpy.median(ranks)) + 1
+    meanr = ranks.mean() + 1
+    return (r1, r5, r10, medr, meanr)
+
+
+def i2t(c2i):
+    """
+    Text->Images (Image Search)
+    c2i: (5N, N) matrix of caption to image errors
+    """
+
+    ranks = numpy.zeros(c2i.shape[1])
+
+    for i in range(len(ranks)):
+        d_i = c2i[:, i]
+        inds = numpy.argsort(d_i)
+
+        rank = numpy.where(inds/5 == i)[0][0]
+        ranks[i] = rank
 
 
     # Compute metrics
@@ -81,5 +100,4 @@ def t2i(c2i):
     r10 = 100.0 * len(numpy.where(ranks < 10)[0]) / len(ranks)
     medr = numpy.floor(numpy.median(ranks)) + 1
     meanr = ranks.mean() + 1
-    print("Fraction of GT pairs with score zero: " + str(num_zero) + " / " + str(c2i.shape[0]))
     return (r1, r5, r10, medr, meanr)
