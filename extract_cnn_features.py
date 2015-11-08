@@ -40,7 +40,7 @@ def process_dataset(dataset, net, gpu_id):
         splits[split].append(image_loc[dataset] + im['filepath'] + '/' + im['filename'])
 
     for name, filenames in splits.items():
-        run(dataset + '_' + name, filenames, net, gpu_id, data_dir)
+        run(dataset + '_' + name, filenames, net, gpu_id, data_dir + 'images/')
 
 
 
@@ -80,7 +80,7 @@ def run(split_name, filenames, net, gpu_id, output_dir):
     print("Shape of features to be computed: " + str(feat_shape))
 
     feats = {}
-    for key in ['images_relu', 'images_relu_oversample']:
+    for key in ['relu', 'relu_oversample']:
         feats[key] = numpy.zeros(feat_shape).astype('float32')
 
 
@@ -123,7 +123,7 @@ def run(split_name, filenames, net, gpu_id, output_dir):
         except OSError:
             pass
 
-        numpy.save(method_dir + '/%s_ims.npy' % split_name, f)
+        numpy.save(method_dir + '/%s.npy' % split_name, f)
 
 
 

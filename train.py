@@ -29,6 +29,7 @@ from datasets import load_dataset
 # main trainer
 def trainer(data='coco',  #f8k, f30k, coco
             cnn='ryan',
+            captions='raw',
             method=None,
             margin=0.2,
             dim=1024,
@@ -54,6 +55,7 @@ def trainer(data='coco',  #f8k, f30k, coco
     model_options = {}
     model_options['data'] = data
     model_options['cnn'] = cnn
+    model_options['captions'] = captions
     model_options['method'] = method
     model_options['margin'] = margin
     model_options['dim'] = dim
@@ -99,7 +101,7 @@ def trainer(data='coco',  #f8k, f30k, coco
 
     # Load training and development sets
     print 'Loading dataset'
-    dataset = load_dataset(data, load_train=True, cnn=cnn)
+    dataset = load_dataset(data, cnn=cnn, captions=captions, load_train=True)
     train = dataset['train']
     dev = dataset['dev']
 

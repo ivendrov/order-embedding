@@ -10,7 +10,7 @@ def path_to_data(name):
     return '/u/vendrov/qanda/hierarchy/'
 #-----------------------------------------------------------------------------#
 
-def load_dataset(name='f8k', load_train=True, cnn=None):
+def load_dataset(name, cnn, captions, load_train=True):
     """
     Load captions and image features
     Possible options: f8k, f30k, coco
@@ -27,20 +27,14 @@ def load_dataset(name='f8k', load_train=True, cnn=None):
     dataset = {}
 
     for split in splits:
+        dataset[split] = {}
         caps = []
-        with open(loc+name+'_' + split + '_caps.txt', 'rb') as f:
+        with open('%s/captions/%s/%s.txt' % (loc, captions, split), 'rb') as f:
             for line in f:
                 caps.append(line.strip())
+            dataset[split]['caps'] = caps
 
-        ims = None
-        try:
-            ims = numpy.load(loc + cnn + '/' + 'f30k_' + split + '_ims.npy')
-        except IOError:
-            pass
-
-        dataset[split] = {'caps': caps}
-        if ims is not None:
-            dataset[split]['ims'] = ims
+        dataset[split]['ims'] = numpy.load('%s/images/%s/%s.npy' % (loc, cnn, split))
 
     return dataset
 
