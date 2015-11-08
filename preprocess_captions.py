@@ -43,7 +43,7 @@ def process_dataset(dataset):
         if split == 'restval':
             split = 'train'
 
-        for s in im['sentences']:
+        for s in im['sentences'][:5]:  # take exactly 5 captions per image
             splits[split].append(s['tokens'])
 
 
