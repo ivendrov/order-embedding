@@ -15,7 +15,7 @@ def load_dataset(name, cnn, captions, load_train=True):
     Load captions and image features
     Possible options: f8k, f30k, coco
     """
-    loc = path_to_data(name) + name + '/'
+    loc = path_to_data(name) + name 
 
     splits = []
     if load_train:
