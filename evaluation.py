@@ -3,56 +3,36 @@ Evaluation code for multimodal-ranking
 """
 import numpy
 
-from datasets import load_dataset
-from tools import encode_sentences, encode_images
 
-def evalrank(model, data, split='dev'):
+import datasets
+from hierarchy_data import HierarchyData
+import tools
+
+def evalrank(model, split='dev'):
     """
-    Evaluate a trained model on either dev or test
-    data options: f8k, f30k, coco
+    Evaluate a trained model on either dev or test of the dataset it was trained on
     """
-    print 'Loading dataset'
-    dataset = load_dataset(data, load_train=False)[split]
+    dataset = model['options']['data']
+    cnn = model['options']['cnn']
+    captions = model['options']['captions']
+
+    print 'Loading dataset...'
+    dataset = datasets.load_dataset(dataset, cnn, captions, load_train=False)
+    caps, ims = HierarchyData(dataset[split], model['worddict'], n_words=len(model['word_dict']))  # TODO what is n_words??
 
     print 'Computing results...'
-    ls = encode_sentences(model, dataset['caps'])
-    lim = encode_images(model, dataset['ims'])
-
-    #(r1, r5, r10, medr) = i2t(lim, ls)
-    #print "Image to text: %.1f, %.1f, %.1f, %.1f" % (r1, r5, r10, medr)
-    (r1i, r5i, r10i, medri) = t2i(lim, ls)
-    print "Text to image: %.1f, %.1f, %.1f, %.1f" % (r1i, r5i, r10i, medri)
+    c_emb = tools.encode_sentences(model, caps)
+    i_emb = tools.encode_images(model, ims)
+    errs = tools.compute_errors(model, c_emb, i_emb)
 
 
-def best_threshold(errs, target):
-    indices = numpy.argsort(errs)
-    sortedErrors = errs[indices]
-    sortedTarget = target[indices]
-    tp = numpy.cumsum(sortedTarget)
-    invSortedTarget = (sortedTarget == 0).astype('float32')
-    Nneg = invSortedTarget.sum()
-    fp = numpy.cumsum(invSortedTarget)
-    tn = fp * -1 + Nneg
-    accuracies = (tp + tn) / sortedTarget.shape[0]
-    i = accuracies.argmax()
-    print("Number of positives, negatives, tp, tn: %f %f %f %f" % (target.sum(), Nneg, tp[i], tn[i]))
-    return sortedErrors[i]
+    (r1, r5, r10, medr, meanr) = t2i(errs)
+    print "Text to image: %.1f, %.1f, %.1f, %.1f, %.1f" % (r1, r5, r10, medr, meanr)
 
+    (r1i, r5i, r10i, medri, meanri) = i2t(errs)
+    print "Image to text: %.1f, %.1f, %.1f, %.1f, %.1f" % (r1i, r5i, r10i, medri, meanri)
 
-
-def eval_accuracy(e1, t1, e2, t2):
-    # find best threshold on the first dev set, use it to evaluate accuracy on the second
-    thresh = best_threshold(e1, t1)
-    pred = e2 <= thresh
-    correct = (pred == t2)
-
-    accuracy = float(correct.astype('float32').mean())
-
-    wrong_indices = numpy.logical_not(correct).nonzero()[0]
-    wrong_preds = pred[wrong_indices]
-
-    return accuracy, wrong_indices, wrong_preds
-
+    return r1i, r5i, r10i, medri, meanri, r1, r5, r10, medr, meanr
 
 def t2i(c2i):
     """
