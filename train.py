@@ -22,7 +22,7 @@ from layers import get_layer, param_init_fflayer, fflayer, param_init_gru, gru_l
 from optim import adam
 from model import init_params, build_model, build_sentence_encoder, build_image_encoder, build_errors
 from vocab import build_dictionary
-from evaluation import eval_accuracy, t2i, i2t
+from evaluation import t2i, i2t
 from tools import encode_sentences, encode_images, compute_errors
 from datasets import load_dataset
 

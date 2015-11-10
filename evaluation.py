@@ -7,6 +7,8 @@ import numpy
 import datasets
 from hierarchy_data import HierarchyData
 import tools
+from model import build_errors
+import theano
 
 def evalrank(model, split='dev'):
     """
@@ -18,11 +20,14 @@ def evalrank(model, split='dev'):
 
     print 'Loading dataset...'
     dataset = datasets.load_dataset(dataset, cnn, captions, load_train=False)
-    caps, ims = HierarchyData(dataset[split], model['worddict'], n_words=len(model['word_dict']))  # TODO what is n_words??
+    caps, ims = HierarchyData(dataset[split], model['worddict'], n_words=len(model['worddict'])).all()  # TODO what is n_words??
 
     print 'Computing results...'
     c_emb = tools.encode_sentences(model, caps)
     i_emb = tools.encode_images(model, ims)
+    if 'f_err' not in model: # for legacy models
+        inps, errs = build_errors(model['options'])
+        model['f_err'] = theano.function(inps, errs)
     errs = tools.compute_errors(model, c_emb, i_emb)
 
 
