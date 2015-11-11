@@ -52,16 +52,14 @@ def contrastive_loss(s, im, options):
     cost_s = tensor.maximum(0, margin - scores + diagonal)  # compare every diagonal score to scores in its column (all contrastive images for each sentence)
     cost_im = tensor.maximum(0, margin - scores + diagonal.reshape((-1, 1)))  # all contrastive sentences for each image
 
-    # clear diagonals
+
     cost_tot = cost_s + cost_im
+
+    # clear diagonals (comparison of
     cost_tot = fill_diagonal(cost_tot, 0)
-    # compare every diagonal score to scores in its column (i.e, all contrastive images for each sentence)
 
-    if options['method'] == 'hierarchy':
-        return cost_tot.sum() #+ options['diagonal_weight'] * tensor.maximum(0, tensor.pow(s, 2).sum(axis=1) - 0.95).sum()
-    else:
-        return cost_tot.sum()
 
+    return cost_tot.sum()
 
 
 def build_model(tparams, options):
@@ -93,12 +91,7 @@ def build_model(tparams, options):
 
 
     images = l2norm(images)
-    if options['method'] == 'cosine':
-        sents = l2norm(sents)
-    else:
-        sents = maxnorm(sents)
-
-
+    sents = l2norm(sents)
 
     if options['abs']:
         images = abs(images)
@@ -138,10 +131,8 @@ def build_sentence_encoder(tparams, options):
     if options['abs']:
         sents = abs(sents)
 
-    if options['method'] == 'cosine':
-        sents = l2norm(sents)
-    else:
-        sents = maxnorm(sents)
+
+    sents = l2norm(sents)
 
     return trng, [x, mask], sents
 
