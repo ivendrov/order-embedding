@@ -10,7 +10,7 @@ from collections import OrderedDict
 from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 from theano.ifelse import ifelse
 
-from utils import _p, ortho_weight, norm_weight, xavier_weight, tanh, l2norm
+from utils import _p, ortho_weight, norm_weight, xavier_weight, tanh, l2norm, maxnorm
 from layers import get_layer, param_init_fflayer, fflayer, param_init_gru, gru_layer
 
 def init_params(options):
@@ -35,20 +35,14 @@ def hierarchical_errors(s, im, options):
     return tensor.pow(tensor.maximum(0, s - im + options['eps']), options['norm'])
 
 def contrastive_loss(s, im, options):
-    im = l2norm(im)
-    if options['method'] == 'cosine':
-        s = l2norm(s)
 
-    if options['abs']:
-        im = abs(im)
-        s = abs(s)
     margin = options['margin']
 
     scores = None
     if options['method'] == 'hierarchy':
-        im = im.dimshuffle(('x', 0, 1))
-        s = s.dimshuffle((0, 'x', 1))
-        scores = hierarchical_errors(s, im, options).sum(axis=2)
+        im2 = im.dimshuffle(('x', 0, 1))
+        s2 = s.dimshuffle((0, 'x', 1))
+        scores = hierarchical_errors(s2, im2, options).sum(axis=2)
     elif options['method'] == 'cosine':
         scores = tensor.dot(im, s.T)
 
@@ -64,7 +58,7 @@ def contrastive_loss(s, im, options):
     # compare every diagonal score to scores in its column (i.e, all contrastive images for each sentence)
 
     if options['method'] == 'hierarchy':
-        return cost_tot.sum() + options['diagonal_weight'] * diagonal.sum()
+        return cost_tot.sum() #+ options['diagonal_weight'] * tensor.maximum(0, tensor.pow(s, 2).sum(axis=1) - 0.95).sum()
     else:
         return cost_tot.sum()
 
@@ -96,6 +90,19 @@ def build_model(tparams, options):
 
     # Encode images (source)
     images = get_layer('ff')[1](tparams, im, options, prefix='ff_image', activ='linear')
+
+
+    images = l2norm(images)
+    if options['method'] == 'cosine':
+        sents = l2norm(sents)
+    else:
+        sents = maxnorm(sents)
+
+
+
+    if options['abs']:
+        images = abs(images)
+        s = abs(sents)
 
     # Compute loss
     cost = contrastive_loss(sents, images, options)
@@ -133,6 +140,8 @@ def build_sentence_encoder(tparams, options):
 
     if options['method'] == 'cosine':
         sents = l2norm(sents)
+    else:
+        sents = maxnorm(sents)
 
     return trng, [x, mask], sents
 

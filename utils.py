@@ -109,6 +109,15 @@ def l2norm(X):
     X /= norm[:, None]
     return X
 
+def maxnorm(X):
+    """
+    Constrain columns to have norms at most 1
+    """
+    norm = tensor.sqrt(tensor.pow(X, 2).sum(1))
+    m = tensor.maximum(norm, 1)
+    X /= m[:, None]
+    return X
+
 def concatenate(tensor_list, axis=0):
     """
     Alternative implementation of `theano.tensor.concatenate`.
