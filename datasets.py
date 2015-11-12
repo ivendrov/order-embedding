@@ -10,7 +10,7 @@ def path_to_data(name):
     return '/u/vendrov/qanda/hierarchy/'
 #-----------------------------------------------------------------------------#
 
-def load_dataset(name, cnn, captions, load_train=True):
+def load_dataset(name, cnn, captions, load_train=True, coco_split=0):
     """
     Load captions and image features
     Possible options: f8k, f30k, coco
@@ -37,10 +37,10 @@ def load_dataset(name, cnn, captions, load_train=True):
 
         dataset[split]['ims'] = numpy.load('%s/images/%s/%s.npy' % (loc, cnn, splitName))
 
-        # handle coco specially by only taking the first 1k images / 5k captions
+        # handle coco specially by only taking 1k or 5k captions/images
         if name == 'coco' and split in ['dev', 'test']:
-            dataset[split]['ims'] = dataset[split]['ims'][:1000]
-            dataset[split]['caps'] = dataset[split]['caps'][:5000]
+            dataset[split]['ims'] = dataset[split]['ims'][coco_split*1000:(coco_split+1)*1000]
+            dataset[split]['caps'] = dataset[split]['caps'][coco_split*5000:(coco_split+1)*5000]
 
     return dataset
 
