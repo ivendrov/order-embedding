@@ -12,7 +12,7 @@ from collections import OrderedDict, defaultdict
 from scipy.linalg import norm
 
 from utils import load_params, init_tparams
-from model import init_params, build_sentence_encoder, build_image_encoder
+from model import init_params, build_sentence_encoder, build_image_encoder, build_error
 
 #-----------------------------------------------------------------------------#
 # Specify model location here
@@ -56,9 +56,10 @@ def load_model(path_to_model=default_model):
     trng, [x, x_mask], sentences = build_sentence_encoder(tparams, options)
     f_senc = theano.function([x, x_mask], sentences, name='f_senc')
 
-    print 'Compiling image encoder...'
-    trng, [im], images = build_image_encoder(tparams, options)
-    f_ienc = theano.function([im], images, name='f_ienc')
+    inps, error = build_error(options)
+    h_error = theano.function(inps, error)
+
+
 
     # Store everything we need in a dictionary
     print 'Packing up...'
@@ -67,7 +68,7 @@ def load_model(path_to_model=default_model):
     model['worddict'] = worddict
     model['word_idict'] = word_idict
     model['f_senc'] = f_senc
-    model['f_ienc'] = f_ienc
+    model['h_error'] = h_error
     return model
 
 def encode_sentences(model, X, verbose=False, batch_size=128):
@@ -117,23 +118,5 @@ def encode_images(model, IM):
     """
     images = model['f_ienc'](IM)
     return images
-
-
-def compute_errors(model, feats, edges):
-    """
-    Computes errors for each edge, given a matrix of features.
-    """
-    errors = numpy.zeros(len(edges))
-    dim = model['options']['dim']
-    batchsize = int(5e8 / 4 / (2*dim))  # max number of edges to handle at once, in order to use at most 500 MB of memory
-    numbatches = len(edges) / batchsize + 1
-    for minibatch in range(numbatches):
-        errors[minibatch::numbatches] = model['h_error'](feats, edges[minibatch::numbatches])
-
-    return errors
-
-
-
-
 
 

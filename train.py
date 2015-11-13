@@ -23,7 +23,7 @@ from optim import adam
 from model import init_params, build_model, build_sentence_encoder, build_image_encoder, build_errors
 from vocab import build_dictionary
 from evaluation import eval_accuracy
-from tools import encode_sentences, encode_images, compute_errors
+from tools import encode_sentences, encode_images
 from datasets import load_dataset
 
 # main trainer
@@ -45,8 +45,6 @@ def trainer(data='coco',  #f8k, f30k, coco
             lrate=0.01,
             eps=1e-7,
             norm=1,
-            max_edges_per_batch=50000,
-            max_nodes_per_batch=1500,
             name='anon',
             overfit=False,
             load_from = None):
@@ -101,11 +99,14 @@ def trainer(data='coco',  #f8k, f30k, coco
     dataset = load_dataset(data, load_train=not overfit)
     train = dataset['dev'] if overfit else dataset['train']
 
+    def flattenCaps(caps):
+        return [c for cs in caps for c in cs]
+
     dev = dataset['dev']
 
     # Create and save dictionary
     print 'Creating dictionary'
-    worddict = build_dictionary(train['caps']+dev['caps'])[0]
+    worddict = build_dictionary(flattenCaps(train['caps']) + flattenCaps(dev['caps']))[0]
     n_words = len(worddict)
     model_options['n_words'] = n_words
     print 'Dictionary size: ' + str(n_words)
@@ -123,12 +124,11 @@ def trainer(data='coco',  #f8k, f30k, coco
     print 'Loading data'
     # Each sentence in the minibatch have same length (for encoder)
     train_iter = hierarchy_data.HierarchyData(train, batch_size=batch_size, worddict=worddict,
-                                              n_words=n_words, maxlen=maxlen_w, max_edges_per_batch=max_edges_per_batch,
-                                              max_nodes_per_batch=max_nodes_per_batch)
+                                              n_words=n_words, maxlen=maxlen_w)
     dev = hierarchy_data.HierarchyData(dev, worddict=worddict, n_words=n_words, maxlen=maxlen_w)
     #test = hierarchy_data.HierarchyData(dataset['test'], worddict=worddict, n_words=n_words)
 
-    dev_caps, dev_edges, dev_target = dev.all()
+    dev_caps, dev_target = dev.all()
     #test_caps, test_edges, test_target = dev.all()
 
     print 'Building model'
@@ -201,13 +201,13 @@ def trainer(data='coco',  #f8k, f30k, coco
 
         print 'Epoch ', eidx
 
-        for x, mask, im, edges, negatives in train_iter:
+        for x, mask, labels in train_iter:
             n_samples += x.shape[1]
             uidx += 1
 
             # Update
             ud_start = time.time()
-            cost = f_grad_shared(x, mask, edges, negatives)
+            cost = f_grad_shared(x, mask, labels)
             f_update(lrate)
             ud = time.time() - ud_start
 
@@ -236,7 +236,7 @@ def trainer(data='coco',  #f8k, f30k, coco
                 dev_s = encode_sentences(curr_model, dev_caps, batch_size=batch_size)
 
                 # compute errors
-                dev_errs = compute_errors(curr_model, dev_s, dev_edges)
+                dev_errs = h_error(dev_s)
 
                 # compute accuracy
                 accuracy, wrong_indices, wrong_preds = eval_accuracy(dev_errs, dev_target, dev_errs, dev_target)
@@ -251,13 +251,6 @@ def trainer(data='coco',  #f8k, f30k, coco
                     numpy.savez(saveto, **params)
                     pkl.dump(model_options, open('%s.pkl'%saveto, 'wb'))
                     print 'Done'
-
-                    # output errors
-                    with open('%s_errors.txt'%saveto, 'wb') as f:
-                        f.write('Prediction\tCaption\n')
-                        for i in range(len(wrong_indices)):
-                            edge = dev_edges[wrong_indices[i]]
-                            f.write(str(wrong_preds[i]) + '\t' + dev_caps[edge[0]] + '\t>\t' + dev_caps[edge[1]] + '\n')
 
         print 'Seen %d samples'%n_samples
 

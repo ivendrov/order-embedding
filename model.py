@@ -30,22 +30,27 @@ def init_params(options):
 
     return params
 
-def hierarchical_error(edges, options):
-    specific = edges[:, 0, :]
-    general = edges[:, 1, :]
-    return tensor.maximum(0, general-specific + options['eps']).norm(options['norm'], 1)
 
-def contrastive_loss(options, s, edges, negatives):
+def hierarchical_error(s, options):
+    N = s.shape[0]/2
+    specific = s[:N]
+    general = s[N:]
+
+    return tensor.pow(tensor.maximum(0, general-specific + options['eps']), 2).sum(axis=1)
+
+
+
+def contrastive_loss(options, s, labels):
     """
     Compute contrastive loss
     """
-    pos = s[edges]
-    neg = s[negatives]
+    errs = hierarchical_error(s, options)
 
-    pos_costs = hierarchical_error(pos, options)
-    neg_costs = tensor.maximum(0, options['margin'] - hierarchical_error(neg, options))
 
-    return (pos_costs.sum() + neg_costs.sum()) / (edges.shape[0] + negatives.shape[0])
+    pos_costs = errs * labels
+    neg_costs = tensor.maximum(0, options['margin'] - errs) * (1-labels)
+
+    return pos_costs.sum() + neg_costs.sum()
 
 
 def build_model(tparams, options):
@@ -58,8 +63,7 @@ def build_model(tparams, options):
     # description string: #words x #samples
     x = tensor.matrix('x', dtype='int64')
     mask = tensor.matrix('mask', dtype='float32')
-    edges = tensor.matrix('edges', dtype='int64')
-    negatives = tensor.matrix('negatives', dtype='int64')
+    labels = tensor.vector('labels', dtype='float32')
 
     n_timesteps = x.shape[0]
     n_samples = x.shape[1]
@@ -74,17 +78,16 @@ def build_model(tparams, options):
     sents = abs(proj[0][-1])
 
     # Compute loss
-    cost = contrastive_loss(options, sents, edges, negatives)
+    cost = contrastive_loss(options, sents, labels)
 
-    return trng, [x, mask, edges, negatives], cost
+    return trng, [x, mask, labels], cost
 
 
 def build_errors(tparams, options):
     feats = tensor.matrix('feats', dtype='float32')
-    edges = tensor.matrix('edges', dtype='int64')
 
-    errors = hierarchical_error(feats[edges], options)
-    return [feats, edges], errors
+    errors = hierarchical_error(feats, options)
+    return [feats], errors
 
 
 def build_sentence_encoder(tparams, options):
@@ -130,4 +133,7 @@ def build_image_encoder(tparams, options):
     
     return trng, [im], images
 
+def build_error(options):
+    s = tensor.matrix('s', dtype='float32')
+    return [s], hierarchical_error(s, options)
 

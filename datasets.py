@@ -2,6 +2,8 @@
 Dataset loading
 """
 import numpy
+import nltk
+from nltk import word_tokenize
 
 #-----------------------------------------------------------------------------#
 # Specify dataset(s) location here
@@ -13,12 +15,13 @@ def path_to_data(name):
         return '/u/vendrov/qanda/hierarchy/'
 #-----------------------------------------------------------------------------#
 
-def load_dataset(name='f8k', load_train=True):
+def load_dataset(name='snli', load_train=True):
     """
     Load captions and image features
     Possible options: f8k, f30k, coco
     """
-    loc = path_to_data(name) + name + '/'
+
+    loc = '/u/vendrov/qanda/hierarchy/snli/' # '/ais/gobi3/u/rkiros/snli/snli_1.0/snli_1.0_'
 
     splits = []
     if load_train:
@@ -27,31 +30,22 @@ def load_dataset(name='f8k', load_train=True):
         splits = ['dev', 'test']
 
 
+
     dataset = {}
 
     for split in splits:
         caps = []
-        with open(loc+name+'_' + split + '_caps.txt', 'rb') as f:
+        labels = []
+
+        with open(loc + split + '.txt') as f:
             for line in f:
-                caps.append(line.strip())
-        ims = None
-        try:
-            ims = numpy.load(loc+name+'_' + split + '_ims.npy')
-        except IOError:
-            pass
+                parts = line.strip().split('\t')
 
-        edges = []
-        try:
-            with open(loc+name+'_' + split + '_edges.txt', 'rb') as f:
-                for line in f:
-                    edges.append(map(int, line.split()))
-        except IOError:
-            # TODO add edges for image-caption mapping
-            pass
+                caps.append((parts[1], parts[2]))
+                labels.append(parts[0] == 'entailment')
 
-        dataset[split] = {'caps': caps, 'edges': edges}
-        if ims is not None:
-            dataset[split]['ims'] = ims
+
+        dataset[split] = {'caps': caps, 'labels': numpy.array(labels).astype('float32')}
 
     return dataset
 
