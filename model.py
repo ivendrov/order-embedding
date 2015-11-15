@@ -32,11 +32,12 @@ def init_params(options):
 
 
 def hierarchical_error(s, options):
+    s = l2norm(s)
     N = s.shape[0]/2
     specific = s[:N]
     general = s[N:]
 
-    return tensor.pow(tensor.maximum(0, general-specific + options['eps']), 2).sum(axis=1)
+    return 1 - (specific * general).sum(axis=1) # cosine distance
 
 
 
@@ -75,7 +76,7 @@ def build_model(tparams, options):
     proj = get_layer(options['encoder'])[1](tparams, emb, None, options,
                                             prefix='encoder',
                                             mask=mask)
-    sents = abs(proj[0][-1])
+    sents = proj[0][-1]
 
     # Compute loss
     cost = contrastive_loss(options, sents, labels)
@@ -112,7 +113,7 @@ def build_sentence_encoder(tparams, options):
     proj = get_layer(options['encoder'])[1](tparams, emb, None, options,
                                             prefix='encoder',
                                             mask=mask)
-    sents = abs(proj[0][-1])
+    sents = proj[0][-1]
 
     return trng, [x, mask], sents
 
@@ -129,7 +130,6 @@ def build_image_encoder(tparams, options):
 
     # Encode images
     images = get_layer('ff')[1](tparams, im, options, prefix='ff_image', activ='linear')
-    images = abs(images)
     
     return trng, [im], images
 

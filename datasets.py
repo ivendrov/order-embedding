@@ -40,7 +40,6 @@ def load_dataset(name='snli', load_train=True):
         with open(loc + split + '.txt') as f:
             for line in f:
                 parts = line.strip().split('\t')
-
                 caps.append((parts[1], parts[2]))
                 labels.append(parts[0] == 'entailment')
 
