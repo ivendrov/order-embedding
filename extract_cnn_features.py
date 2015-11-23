@@ -5,31 +5,13 @@ from collections import defaultdict
 import sklearn.preprocessing
 from PIL import ImageFile
 import os
+import paths
 ImageFile.LOAD_TRUNCATED_IMAGES = True  # needed for coco train
 
 
-
-image_loc = {
-    'f30k': '/ais/gobi3/u/rkiros/flickr30k/images/',
-    'coco': '/ais/gobi3/datasets/mscoco/images/'
-}
-
-
-nets = {
-    'VGG19':
-            {
-                'prototxt': '/u/vendrov/qanda/caffe_models/VGG19/VGG_ILSVRC_19_layers_deploy.prototxt',
-                'caffemodel': '/ais/gobi3/datasets/caffe_nets/models/VGG_ILSVRC_19_layers/VGG_ILSVRC_19_layers.caffemodel',
-                'features_layer': 'fc7',
-                'mean': numpy.array([103.939, 116.779, 123.68])  # BGR means, from https://gist.github.com/ksimonyan/3785162f95cd2d5fee77
-            }
-}
-
-root_dir = '/u/vendrov/qanda/hierarchy/'
-
-
 def process_dataset(dataset, net, gpu_id):
-    data_dir = root_dir + dataset + '/'
+    data_dir = paths.datasets[dataset]['dir'] + '/'
+    images_dir = paths.datasets[dataset]['images_dir']
     data = json.load(open(data_dir + 'dataset_%s.json' % dataset, 'r'))
 
     splits = defaultdict(list)
@@ -37,17 +19,11 @@ def process_dataset(dataset, net, gpu_id):
         split = im['split']
         if split == 'restval':
             split = 'train'
-        splits[split].append(image_loc[dataset] + im['filepath'] + '/' + im['filename'])
+        splits[split].append(images_dir[dataset] + im['filepath'] + '/' + im['filename'])
 
     for name, filenames in splits.items():
         run(dataset + '_' + name, filenames, net, gpu_id, data_dir + 'images/')
-
-
-
-
-
-
-
+        
 
 def run(split_name, filenames, net, gpu_id, output_dir):
     """ Extracts CNN features
@@ -57,7 +33,7 @@ def run(split_name, filenames, net, gpu_id, output_dir):
     :param output_dir: the directory to store the features in
     :param gpu_id: gpu ID to use to run computation
     """
-    net_data = nets[net]
+    net_data = paths.cnns[net]
     layer = net_data['features_layer']
 
     # load caffe net

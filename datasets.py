@@ -2,20 +2,14 @@
 Dataset loading
 """
 import numpy
-
-#-----------------------------------------------------------------------------#
-# Specify dataset(s) location here
-#-----------------------------------------------------------------------------#
-def path_to_data(name):
-    return '/u/vendrov/qanda/hierarchy/'
-#-----------------------------------------------------------------------------#
+import paths
 
 def load_dataset(name, cnn, load_train=True, fold=0):
     """
     Load captions and image features
     Possible options: f8k, f30k, coco
     """
-    loc = path_to_data(name) + name 
+    loc = paths.datasets[name]['loc']
 
     splits = []
     if load_train:
