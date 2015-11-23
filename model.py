@@ -66,9 +66,6 @@ def build_model(tparams, options):
     """
     Computation graph for the model
     """
-    opt_ret = dict()
-    trng = RandomStreams(1234)
-
     # description string: #words x #samples
     x = tensor.matrix('x', dtype='int64')
     mask = tensor.matrix('mask', dtype='float32')
@@ -100,7 +97,7 @@ def build_model(tparams, options):
     # Compute loss
     cost = contrastive_loss(sents, images, options)
 
-    return trng, [x, mask, im], cost
+    return [x, mask, im], cost
 
 
 
@@ -108,10 +105,6 @@ def build_sentence_encoder(tparams, options):
     """
     Encoder only, for sentences
     """
-    opt_ret = dict()
-
-    trng = RandomStreams(1234)
-
     # description string: #words x #samples
     x = tensor.matrix('x', dtype='int64')
     mask = tensor.matrix('x_mask', dtype='float32')
@@ -134,16 +127,12 @@ def build_sentence_encoder(tparams, options):
 
     sents = l2norm(sents)
 
-    return trng, [x, mask], sents
+    return [x, mask], sents
 
 def build_image_encoder(tparams, options):
     """
     Encoder only, for images
     """
-    opt_ret = dict()
-
-    trng = RandomStreams(1234)
-
     # image features
     im = tensor.matrix('im', dtype='float32')
 
@@ -154,7 +143,7 @@ def build_image_encoder(tparams, options):
     if options['abs']:
         images = abs(images)
     
-    return trng, [im], images
+    return [im], images
 
 
 def build_errors(options):

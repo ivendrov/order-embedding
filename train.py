@@ -92,14 +92,14 @@ def trainer(load_from=None,
 
     tparams = init_tparams(params)
 
-    trng, inps, cost = build_model(tparams, model_options)
+    inps, cost = build_model(tparams, model_options)
 
     print 'Building sentence encoder'
-    trng, inps_se, sentences = build_sentence_encoder(tparams, model_options)
+    inps_se, sentences = build_sentence_encoder(tparams, model_options)
     f_senc = theano.function(inps_se, sentences, profile=False)
 
     print 'Building image encoder'
-    trng, inps_ie, images = build_image_encoder(tparams, model_options)
+    inps_ie, images = build_image_encoder(tparams, model_options)
     f_ienc = theano.function(inps_ie, images, profile=False)
 
     print 'Building f_grad...',

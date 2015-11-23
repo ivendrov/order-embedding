@@ -35,12 +35,11 @@ def load_model(path_to_model):
 
     # Extractor functions
     print 'Compiling sentence encoder...'
-    trng = RandomStreams(1234)
-    trng, [x, x_mask], sentences = build_sentence_encoder(tparams, options)
+    [x, x_mask], sentences = build_sentence_encoder(tparams, options)
     f_senc = theano.function([x, x_mask], sentences, name='f_senc')
 
     print 'Compiling image encoder...'
-    trng, [im], images = build_image_encoder(tparams, options)
+    [im], images = build_image_encoder(tparams, options)
     f_ienc = theano.function([im], images, name='f_ienc')
 
     # Store everything we need in a dictionary
