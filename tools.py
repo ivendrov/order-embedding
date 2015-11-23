@@ -58,13 +58,8 @@ def encode_sentences(model, X, verbose=False, batch_size=128):
     # length dictionary
     ds = defaultdict(list)
     captions = [s.split() for s in X]
-    for i,s in enumerate(captions):
+    for i, s in enumerate(captions):
         ds[len(s)].append(i)
-
-    # quick check if a word is in the dictionary
-    d = defaultdict(lambda : 0)
-    for w in model['worddict'].keys():
-        d[w] = 1
 
     # Get features. This encodes by length, in order to avoid wasting computation
     for k in ds.keys():
@@ -77,7 +72,7 @@ def encode_sentences(model, X, verbose=False, batch_size=128):
 
             seqs = []
             for i, cc in enumerate(caption):
-                seqs.append([model['worddict'][w] if d[w] > 0 and model['worddict'][w] < model['options']['n_words'] else 1 for w in cc])
+                seqs.append([model['worddict'][w] if w in model['worddict'] and model['worddict'][w] < model['options']['n_words'] else 1 for w in cc])
             x = numpy.zeros((k+1, len(caption))).astype('int64')
             x_mask = numpy.zeros((k+1, len(caption))).astype('float32')
             for idx, s in enumerate(seqs):

@@ -73,11 +73,10 @@ def trainer(load_from=None,
 
     # Create dictionary
     print 'Creating dictionary'
-    worddict, inverse_worddict = build_dictionary(train['caps']+dev['caps'])[0]
+    worddict = build_dictionary(train['caps']+dev['caps'])
     print 'Dictionary size: ' + str(len(worddict))
-
     curr_model['worddict'] = worddict
-    curr_model['inverse_worddict'] = inverse_worddict
+    curr_model['options']['n_words'] = len(worddict)
 
 
     print 'Loading data'

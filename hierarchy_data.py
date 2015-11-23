@@ -48,7 +48,7 @@ class HierarchyData():
         seqs = []
         for i in indices:
             cc = self.data['caps'][i]
-            seqs.append([self.worddict[w] if w in self.worddict[w] else 1 for w in cc.split()])
+            seqs.append([self.worddict[w] if w in self.worddict else 1 for w in cc.split()])
 
         lengths = map(len, seqs)
         n_samples = len(seqs)
