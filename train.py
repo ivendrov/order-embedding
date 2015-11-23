@@ -2,23 +2,15 @@
 Main trainer function
 """
 import theano
-import theano.tensor as tensor
 
 import cPickle as pkl
-import numpy
-import copy
 
 import os
-import warnings
-import sys
 import time
 
 import hierarchy_data
 
-from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
-
 from utils import *
-from layers import get_layer, param_init_fflayer, fflayer, param_init_gru, gru_layer
 from optim import adam
 from model import init_params, build_model, build_sentence_encoder, build_image_encoder, build_errors
 from vocab import build_dictionary
@@ -104,8 +96,6 @@ def trainer(load_from=None,
 
     print 'Building f_grad...',
     grads = tensor.grad(cost, wrt=itemlist(tparams))
-    f_grad_norm = theano.function(inps, [(g**2).sum() for g in grads], profile=False)
-    f_weight_norm = theano.function([], [(t**2).sum() for k,t in tparams.iteritems()], profile=False)
 
     print 'Building errors..'
     inps_err, errs = build_errors(model_options)

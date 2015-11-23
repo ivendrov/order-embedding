@@ -4,13 +4,10 @@ Model specification
 import theano
 import theano.tensor as tensor
 from theano.tensor.extra_ops import fill_diagonal
-import numpy
 
 from collections import OrderedDict
-from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
-from theano.ifelse import ifelse
 
-from utils import _p, ortho_weight, norm_weight, xavier_weight, tanh, l2norm, maxnorm
+from utils import _p, ortho_weight, norm_weight, xavier_weight, tanh, l2norm
 from layers import get_layer, param_init_fflayer, fflayer, param_init_gru, gru_layer
 
 def init_params(options):
