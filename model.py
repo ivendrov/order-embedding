@@ -92,7 +92,7 @@ def build_model(tparams, options):
 
     if options['abs']:
         images = abs(images)
-        s = abs(sents)
+        sents = abs(sents)
 
     # Compute loss
     cost = contrastive_loss(sents, images, options)
