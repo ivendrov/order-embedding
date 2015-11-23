@@ -32,7 +32,7 @@ def init_params(options):
     return params
 
 def hierarchical_errors(s, im, options):
-    return tensor.pow(tensor.maximum(0, s - im + options['eps']), options['norm'])
+    return tensor.pow(tensor.maximum(0, s - im), options['norm'])
 
 def contrastive_loss(s, im, options):
 

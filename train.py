@@ -27,56 +27,52 @@ from tools import encode_sentences, encode_images, compute_errors
 from datasets import load_dataset
 
 # main trainer
-def trainer(data='coco',  #f8k, f30k, coco
-            cnn='ryan',
-            captions='raw',
-            method=None,
-            margin=0.2,
-            dim=1024,
-            dim_image=4096,
-            dim_word=300,
-            encoder='gru',
-            max_epochs=15,
-            dispFreq=10,
-            decay_c=0.,
-            grad_clip=2.,
-            optimizer='adam',
-            batch_size = 128,
-            saveto='/ais/gobi3/u/rkiros/uvsmodels/coco.npz',
-            validFreq=100,
-            lrate=0.01,
-            eps=1e-7,
-            norm=1,
-            abs=False,
+def trainer(load_from=None,
+            save_dir='snapshots',
             name='anon',
-            load_from=None):
+            **kwargs):
+    """
+    :param load_from: location to load parameters + options from
+    :param name: name of model, used as location to save parameters + options
+    Keyword Arguments are:
+            cnn='ryan'
+            captions='raw'
+            method=None
+            margin=0.2
+            dim=1024
+            dim_image=4096
+            dim_word=300
+            encoder='gru'
+            max_epochs=15
+            dispFreq=10
+            decay_c=0.
+            grad_clip=2.
+            optimizer='adam'
+            batch_size = 128
+            validFreq=100
+            lrate=0.01
+            eps=1e-7
+            norm=1
+            abs=False
+            name='anon'
+    """
 
-    # Model options
-    model_options = {}
-    model_options['data'] = data
-    model_options['cnn'] = cnn
-    model_options['captions'] = captions
-    model_options['method'] = method
-    model_options['margin'] = margin
-    model_options['dim'] = dim
-    model_options['dim_image'] = dim_image
-    model_options['dim_word'] = dim_word
-    model_options['encoder'] = encoder
-    model_options['max_epochs'] = max_epochs
-    model_options['dispFreq'] = dispFreq
-    model_options['decay_c'] = decay_c
-    model_options['grad_clip'] = grad_clip
-    model_options['optimizer'] = optimizer
-    model_options['batch_size'] = batch_size
-    model_options['saveto'] = saveto
-    model_options['validFreq'] = validFreq
-    model_options['lrate'] = lrate
-    model_options['abs'] = abs
-    model_options['eps'] = eps
-    model_options['norm'] = norm
-    model_options['load_from'] = load_from
+    curr_model = dict()
 
+    # load old model, including parameters, but overwrite with new options
+    if load_from:
+        print 'reloading...' + load_from
+        with open('%s.pkl'%load_from, 'rb') as f:
+            curr_model = pkl.load(f)
+    else:
+        curr_model['options'] = {}
 
+    for k, v in kwargs.iteritems():
+        curr_model['options'][k] = v
+
+    model_options = curr_model['options']
+
+    # initialize logger
     import datetime
     timestampedName = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S') + '_' + name
 
@@ -85,34 +81,23 @@ def trainer(data='coco',  #f8k, f30k, coco
               xLabel='Examples Seen', saveFrequency=1)
 
 
+    print curr_model['options']
 
-    print model_options
-
-    # reload options, without overwriting existing ones
-    if load_from is not None and os.path.exists(load_from):
-        print 'reloading...' + load_from
-        with open('%s.pkl'%load_from, 'rb') as f:
-            old_model_options = pkl.load(f)
-            for k, v in old_model_options.iteritems():
-                if k not in model_options:
-                    model_options[k] = v
 
 
 
     # Load training and development sets
     print 'Loading dataset'
-    dataset = load_dataset(data, cnn=cnn, captions=captions, load_train=True)
+    dataset = load_dataset(model_options['data'], cnn=model_options['cnn'], captions=model_options['captions'], load_train=True)
     train = dataset['train']
     dev = dataset['dev']
 
-    # Create and save dictionary
+    # Create dictionary
     print 'Creating dictionary'
     worddict = build_dictionary(train['caps']+dev['caps'])[0]
     n_words = len(worddict)
     model_options['n_words'] = n_words
     print 'Dictionary size: ' + str(n_words)
-    with open('%s.dictionary.pkl'%saveto, 'wb') as f:
-        pkl.dump(worddict, f)
 
     # Inverse dictionary
     word_idict = dict()
@@ -121,9 +106,12 @@ def trainer(data='coco',  #f8k, f30k, coco
     word_idict[0] = '<eos>'
     word_idict[1] = 'UNK'
 
+    curr_model['worddict'] = worddict
+    curr_model['word_idict'] = word_idict
+
 
     print 'Loading data'
-    train_iter = hierarchy_data.HierarchyData(train, batch_size=batch_size, worddict=worddict,
+    train_iter = hierarchy_data.HierarchyData(train, batch_size=model_options['batch_size'], worddict=worddict,
                                               n_words=n_words)
     dev = hierarchy_data.HierarchyData(dev, worddict=worddict, n_words=n_words)
     dev_caps, dev_ims = dev.all()
@@ -155,21 +143,19 @@ def trainer(data='coco',  #f8k, f30k, coco
     inps_err, errs = build_errors(model_options)
     f_err = theano.function(inps_err, errs, profile=False)
 
-    curr_model = dict()
-    curr_model['options'] = model_options
-    curr_model['worddict'] = worddict
-    curr_model['word_idict'] = word_idict
+
     curr_model['f_senc'] = f_senc
     curr_model['f_ienc'] = f_ienc
     curr_model['f_err'] = f_err
+    curr_model['params'] = unzip(tparams)
 
-    if grad_clip > 0.:
-        grads = [maxnorm(g, grad_clip) for g in grads]
+    if model_options['grad_clip'] > 0.:
+        grads = [maxnorm(g, model_options['grad_clip']) for g in grads]
 
     lr = tensor.scalar(name='lr')
     print 'Building optimizers...',
     # (compute gradients), (updates parameters)
-    f_grad_shared, f_update = eval(optimizer)(lr, tparams, grads, inps, cost)
+    f_grad_shared, f_update = eval(model_options['optimizer'])(lr, tparams, grads, inps, cost)
 
     print 'Optimization'
 
@@ -179,7 +165,7 @@ def trainer(data='coco',  #f8k, f30k, coco
 
 
     
-    for eidx in xrange(max_epochs):
+    for eidx in xrange(model_options['max_epochs']):
 
         print 'Epoch ', eidx
 
@@ -190,24 +176,24 @@ def trainer(data='coco',  #f8k, f30k, coco
             # Update
             ud_start = time.time()
             cost = f_grad_shared(x, mask, im)
-            f_update(lrate)
+            f_update(model_options['lrate'])
             ud = time.time() - ud_start
 
             if numpy.isnan(cost) or numpy.isinf(cost):
                 print 'NaN detected'
                 return 1., 1., 1.
 
-            if numpy.mod(uidx, dispFreq) == 0:
+            if numpy.mod(uidx, model_options['dispFreq']) == 0:
                 print 'Epoch ', eidx, 'Update ', uidx, 'Cost ', cost, 'UD ', ud
                 log.update({'Error': float(cost)}, n_samples)
 
 
-            if numpy.mod(uidx, validFreq) == 0:
+            if numpy.mod(uidx, model_options['validFreq']) == 0:
 
                 print 'Computing results...'
 
                 # encode sentences efficiently
-                dev_s = encode_sentences(curr_model, dev_caps, batch_size=batch_size)
+                dev_s = encode_sentences(curr_model, dev_caps, batch_size=model_options['batch_size'])
                 dev_i = encode_images(curr_model, dev_ims)
 
                 s_norm = float(numpy.linalg.norm(dev_s, axis=1).mean())
@@ -236,9 +222,7 @@ def trainer(data='coco',  #f8k, f30k, coco
                     curr = tot
                     # Save model
                     print 'Saving...',
-                    params = unzip(tparams)
-                    numpy.savez(saveto, **params)
-                    pkl.dump(model_options, open('%s.pkl'%saveto, 'wb'))
+                    pkl.dump(curr_model, open('%s/%s.pkl'%(save_dir, name), 'wb'))
                     print 'Done'
 
 
