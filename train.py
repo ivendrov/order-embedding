@@ -59,7 +59,7 @@ def trainer(load_from=None,
 
     # Load training and development sets
     print 'Loading dataset'
-    dataset = load_dataset(model_options['data'], cnn=model_options['cnn'], captions=model_options['captions'], load_train=True)
+    dataset = load_dataset(model_options['data'], cnn=model_options['cnn'], load_train=True)
     train = dataset['train']
     dev = dataset['dev']
 

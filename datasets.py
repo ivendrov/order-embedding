@@ -10,7 +10,7 @@ def path_to_data(name):
     return '/u/vendrov/qanda/hierarchy/'
 #-----------------------------------------------------------------------------#
 
-def load_dataset(name, cnn, captions, load_train=True, coco_split=0):
+def load_dataset(name, cnn, load_train=True, fold=0):
     """
     Load captions and image features
     Possible options: f8k, f30k, coco
@@ -30,7 +30,7 @@ def load_dataset(name, cnn, captions, load_train=True, coco_split=0):
         dataset[split] = {}
         caps = []
         splitName = 'val' if name == 'coco' and split == 'dev' else split
-        with open('%s/captions/%s/%s.txt' % (loc, captions, splitName), 'rb') as f:
+        with open('%s/%s.txt' % (loc, splitName), 'rb') as f:
             for line in f:
                 caps.append(line.strip())
             dataset[split]['caps'] = caps
@@ -39,8 +39,8 @@ def load_dataset(name, cnn, captions, load_train=True, coco_split=0):
 
         # handle coco specially by only taking 1k or 5k captions/images
         if name == 'coco' and split in ['dev', 'test']:
-            dataset[split]['ims'] = dataset[split]['ims'][coco_split*1000:(coco_split+1)*1000]
-            dataset[split]['caps'] = dataset[split]['caps'][coco_split*5000:(coco_split+1)*5000]
+            dataset[split]['ims'] = dataset[split]['ims'][fold*1000:(fold+1)*1000]
+            dataset[split]['caps'] = dataset[split]['caps'][fold*5000:(fold+1)*5000]
 
     return dataset
 
