@@ -1,44 +1,12 @@
-# visual-semantic-embedding
+# order-embeddings
 
-Code for the image-sentence ranking methods from "Unifying Visual-Semantic Embeddings with Multimodal Neural Language Models" (Kiros, Salakhutdinov, Zemel. 2014).
+Theano implementation of caption-image retrieval and textual entailment from the paper ["Order-Embeddings of Images and Language"](http://arxiv.org/abs/1511.06361)
 
-Images and sentences are mapped into a common vector space, where the sentence representation is computed using LSTM. This project contains training code and pre-trained models for Flickr8K, Flickr30K and MS COCO.
+[](Describe the ideas of the paper)
 
-New (Oct 19, 2015): Ability to embed and caption your own images.
-
-If you're interested in generating image captions instead, see our follow up project [arctic-captions](https://github.com/kelvinxu/arctic-captions).
 
 ## Visualization
-
-Here are [results](http://www.cs.toronto.edu/~rkiros/vse_coco_dev.html) on 1000 images from the MS COCO development set, using the pre-trained model available for download. For each image, we retrieve the highest scoring caption from the training set.
-
-See below for details on how to use your own images.
-
-## Results
-
-Below is a table of results obtained using the code from this repository, comparing the numbers reported in our paper. aR@K is the Recall@K for image annotation (higher is better), while sR@K is the Recall@K for image search (higher is better). Medr is the median rank of the closest ground truth (lower is better).
-
-**Flickr8K**
-
-| Method | aR@1 | aR@5 | aR@10 | aMedr | sR@1 | sR@5 | sR@10 | sMedr |
-| :-----: | :-----: | :-----: | :-----: | :-----: | :-----: | :-----: | :-----: | :-----: |
-| reported | 18.0 | 40.9 | 55.0 | 8 | 12.5 | 37.0 | 51.5 | 10 |
-| this project | 22.3 | 48.7 | 59.8 | 6 | 14.9 | 38.3 | 51.6 | 10
-
-**Flickr30K**
-
-| Method | aR@1 | aR@5 | aR@10 | aMedr | sR@1 | sR@5 | sR@10 | sMedr |
-| :-----: | :-----: | :-----: | :-----: | :-----: | :-----: | :-----: | :-----: | :-----: |
-| reported | 23.0 | 50.7 | 62.9 | 5 | 16.8 | 42.0 | 56.5 | 8
-| this project | 29.8 | 58.4 | 70.5 | 4 | 22.0 | 47.9 | 59.3 | 6
-
-**MS COCO**
-
-| Method | aR@1 | aR@5 | aR@10 | aMedr | sR@1 | sR@5 | sR@10 | sMedr |
-| :-----: | :-----: | :-----: | :-----: | :-----: | :-----: | :-----: | :-----: | :-----: |
-| this project | 43.4 | 75.7 | 85.8 | 2 | 31.0 | 66.7 | 79.9 | 3 
-
-For a complete list of results on these tasks, see [this paper](http://arxiv.org/abs/1504.06063) by Lin Ma et al (ICCV 2015) which contains the the most up-to-date tables (as of September 2015).
+[](add links to ranking comparison)
 
 ## Dependencies
 
@@ -47,36 +15,32 @@ This code is written in python. To use it you will need:
 * Python 2.7
 * Theano 0.7
 * A recent version of [NumPy](http://www.numpy.org/) and [SciPy](http://www.scipy.org/)
+* TODO others?
 
-If you want to caption your own images, you will also need:
+## Replicating the paper
 
-* [Lasagne](https://github.com/Lasagne/Lasagne)
-* A version of Theano that Lasagne supports
+### Getting data
 
-## Getting started
+Download the dataset files, including 10-crop [VGG19 features](http://www.robots.ox.ac.uk/~vgg/research/very_deep/), by running
 
-You will first need to download the dataset files and pre-trained models. These can be obtained by running
+    wget http://www.cs.toronto.edu/~vendrov/datasets/coco.zip
+   
+Note that we use the splits produced by [Andrej Karpathy](http://cs.stanford.edu/people/karpathy/deepimagesent/). The full COCO dataset
+can be obtained [here](http://mscoco.org/).
+    
+In `paths.py`, point `datasets_dir` to where you unzipped the data.
+    
+### Evaluating pre-trained models
 
-    wget http://www.cs.toronto.edu/~rkiros/datasets/f8k.zip
-    wget http://www.cs.toronto.edu/~rkiros/datasets/f30k.zip
-    wget http://www.cs.toronto.edu/~rkiros/datasets/coco.zip
-    wget http://www.cs.toronto.edu/~rkiros/models/vse.zip
+Download the pre-trained models used in the paper by running 
 
-Each of the dataset files contains the captions as well as [VGG features](http://www.robots.ox.ac.uk/~vgg/research/very_deep/) from the 19-layer model. Flickr8K comes with a pre-defined train/dev/test split, while for Flickr30K and MS COCO we use the splits produced by [Andrej Karpathy](http://cs.stanford.edu/people/karpathy/deepimagesent/). Note that the original images are not included with the dataset. The full contents of each of the datasets can be obtained [here](http://nlp.cs.illinois.edu/HockenmaierGroup/Framing_Image_Description/KCCA.html), [here](http://shannon.cs.illinois.edu/DenotationGraph/) and [here](http://mscoco.org/).
+    wget http://www.cs.toronto.edu/~vendrov/datasets/order-models.zip
+    
 
-Once the datasets are downloaded, open `datasets.py` and set the directory to where the datasets are.
 
-**NOTE to Toronto users**: the unzipped files are available in my gobi3 directory under uvsdata and uvsmodels. Just link there instead of downloading.
 
-## Evaluating pre-trained models
 
-Lets use Flickr8K as an example. To reproduce the numbers in the table above, open `tools.py` and specify the path to the downloaded Flickr8K model. Then in IPython run the following: 
-
-    import tools, evaluation
-    model = tools.load_model()
-    evaluation.evalrank(model, data='f8k', split='test')
-
-This will evaluate the loaded model on the Flickr8K test set. You can also replace 'test' with 'dev' to evaluate on the development set. Alternatively, evaluate the Flickr30K and MS COCO models instead.
+    
 
 ## Computing image and sentence vectors
 
@@ -123,46 +87,23 @@ Once you are happy, just run the following:
     
 As the model trains, it will periodically evaluate on the development set (validFreq) and re-save the model each time performance on the development set increases. Generally you shouldn't need more than 15-20 epochs of training on any of the datasets. Once the models are saved, you can load and evaluate them in the same way as the pre-trained models.
 
-## Using your own images
+## Training on different datasets
 
-The script `demo.py` contains code for embedding and captioning your own images. First you need to download the model parameters for the VGG-19 ConvNet. You can download them by running:
 
-    wget https://s3.amazonaws.com/lasagne/recipes/pretrained/imagenet/vgg19.pkl
-    
-Note that this model is for non-commercial use only. Next, open `demo.py` and set the location of where you saved the parameters. In `model.py` specify the location of the pre-trained MS COCO model. Then run the following:
+## Exploring Regularities
 
-    import demo, tools, datasets
-    net = demo.build_convnet()
-    model = tools.load_model()
-    train = datasets.load_dataset('coco', load_train=True)[0]
-    vectors = tools.encode_sentences(model, train[0], verbose=False)
-    demo.retrieve_captions(model, net, train[0], vectors, 'image.jpg', k=5)
-    
-where image.jpg is some image. The above code will initialize the VGG ConvNet, load the pre-trained embedding model, load the MS COCO training set and then embed the training captions. For a new image, the last line will score the image embedding with each MS COCO training caption and retrieve the top-5 nearest captions. For example, with the first image [here](http://www.cs.toronto.edu/~rkiros/vse_coco_dev.html) I get the following output:
-
-    ['The salad has many different types of vegetables in it .',
-    'A salad is concocted with broccoli , potatoes and tomatoes .',
-    'A table filled with greens and lots of vegetables .',
-    'Pasta salad with tomatoes , broccoli , beans and sausage in a bowl..',
-    'There is a lot if veggies that are in the tray']
-    
-Note that since this model was trained on MS COCO, if you use images that are much different than the training data you might get some funny results. If you want to do the reverse task (retrieve images for captions) it should be very straightforward to modify the code to do so.
-
-## Using different datasets and features
-
-If you want to use a different dataset, or use different image features, you will have to edit the paths in `datasets.py`. Each of (training/dev/test) contains 2 files: a .txt file of captions (one per line) and a .npy file containing a NumPy array of image features, where each row is the image features for the corresponding caption. If you put your dataset in the same format, then it can be used for training new models.
 
 ## Reference
 
 If you found this code useful, please cite the following paper:
 
-Ryan Kiros, Ruslan Salakhutdinov, Richard S. Zemel. **"Unifying Visual-Semantic Embeddings with Multimodal Neural Language Models."** *arXiv preprint arXiv:1411.2539 (2014).*
+Ivan Vendrov Ryan Kiros, Sanja Fidler, Raquel Urtasun. **"Order-Embeddings of Images and Language."** *arXiv preprint arXiv:1511.06361 (2015).*
 
-    @article{kiros2014unifying,
-      title={Unifying visual-semantic embeddings with multimodal neural language models},
-      author={Kiros, Ryan and Salakhutdinov, Ruslan and Zemel, Richard S},
-      journal={arXiv preprint arXiv:1411.2539},
-      year={2014}
+    @article{vendrov2015order,
+      title={Order-embeddings of images and language},
+      author={Vendrov, Ivan and Kiros, Ryan and Fidler, Sanja and Urtasun, Raquel},
+      journal={arXiv preprint arXiv:1511.06361},
+      year={2015}
     }
 
 ## License

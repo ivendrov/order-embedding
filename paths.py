@@ -1,11 +1,14 @@
 import numpy
-datasets = {
-    'coco': {
-        'dir': '/u/vendrov/qanda/hierarchy/coco',
-        'images_dir': '/ais/gobi3/datasets/mscoco/images'
-    }
+
+# location for captions and image CNN features
+dataset_dir = {
+    'coco': '/u/vendrov/qanda/hierarchy/coco',
 }
 
+## Change paths below only if you are computing your own image CNN features
+images_dir = {
+    'coco': '/ais/gobi3/datasets/mscoco/images'  # location for raw images
+}
 
 cnns = {
     'VGG19':

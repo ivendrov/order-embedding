@@ -9,7 +9,7 @@ def load_dataset(name, cnn, load_train=True, fold=0):
     Load captions and image features
     Possible options: f8k, f30k, coco
     """
-    loc = paths.datasets[name]['loc']
+    loc = paths.dataset_dir[name]
 
     splits = []
     if load_train:

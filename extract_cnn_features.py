@@ -10,8 +10,8 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True  # needed for coco train
 
 
 def process_dataset(dataset, net, gpu_id):
-    data_dir = paths.datasets[dataset]['dir'] + '/'
-    images_dir = paths.datasets[dataset]['images_dir']
+    data_dir = paths.dataset_dir[dataset] + '/'
+    images_dir = paths.images_dir[dataset]
     data = json.load(open(data_dir + 'dataset_%s.json' % dataset, 'r'))
 
     splits = defaultdict(list)
@@ -23,7 +23,7 @@ def process_dataset(dataset, net, gpu_id):
 
     for name, filenames in splits.items():
         run(dataset + '_' + name, filenames, net, gpu_id, data_dir + 'images/')
-        
+
 
 def run(split_name, filenames, net, gpu_id, output_dir):
     """ Extracts CNN features
