@@ -76,7 +76,7 @@ def trainer(load_from=None,
     worddict = build_dictionary(train['caps']+dev['caps'])
     print 'Dictionary size: ' + str(len(worddict))
     curr_model['worddict'] = worddict
-    curr_model['options']['n_words'] = len(worddict)
+    curr_model['options']['n_words'] = len(worddict) + 2
 
 
     print 'Loading data'
