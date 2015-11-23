@@ -1,8 +1,8 @@
 import train
 
-base = ['hierarchy', 0.05, True, 'raw', 'relu_oversample']
-crop1 = ['hierarchy', 0.05, True, 'raw', 'relu']
-symmetric = ['cosine', 0.2, False, 'raw', 'relu_oversample']
+base = ['hierarchy', 0.05, True, '10crop']
+crop1 = ['hierarchy', 0.05, True, '1crop']
+symmetric = ['cosine', 0.2, False, '10crop']
 
 import argparse
 parser = argparse.ArgumentParser()
@@ -26,6 +26,6 @@ params = {
 
 
 
-for method, margin, abs, captions, cnn in [eval(args.model)]:
-    name = '_'.join(['anon', 'coco_new_ablation', method, captions, cnn])
-    train.trainer(data='coco', margin=margin, max_epochs=100, name=name, abs=abs, cnn=cnn, method=method, captions=captions, **params)
+for method, margin, abs, cnn in [eval(args.model)]:
+    name = '_'.join(['anon', 'coco_new_ablation', method, cnn])
+    train.trainer(data='coco', margin=margin, max_epochs=100, name=name, abs=abs, cnn=cnn, method=method, **params)

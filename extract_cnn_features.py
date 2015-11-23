@@ -80,7 +80,7 @@ def run(split_name, filenames, net, gpu_id, output_dir):
     print("Shape of features to be computed: " + str(feat_shape))
 
     feats = {}
-    for key in ['relu', 'relu_oversample']:
+    for key in ['1crop', '10crop']:
         feats[key] = numpy.zeros(feat_shape).astype('float32')
 
 
@@ -105,9 +105,9 @@ def run(split_name, filenames, net, gpu_id, output_dir):
         output = net.blobs[layer].data[:n]
 
         for key, f in feats.items():
-            if key.find('relu') > -1:
-                output = numpy.maximum(output, 0)
-            if key.find('oversample') > -1:
+            output = numpy.maximum(output, 0)
+
+            if key == '10crop':
                 f[k] = output.mean(axis=0)  # mean over 10 crops
             else:
                 f[k] = output[4]  # just center crop
