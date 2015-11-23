@@ -109,14 +109,15 @@ def l2norm(X):
     X /= norm[:, None]
     return X
 
-def maxnorm(X):
+def maxnorm(t, threshold):
     """
-    Constrain columns to have norms at most 1
+    Rescale given tensor to have norm at most equal to threshold
     """
-    norm = tensor.sqrt(tensor.pow(X, 2).sum(1))
-    m = tensor.maximum(norm, 1)
-    X /= m[:, None]
-    return X
+    norm = (t**2).sum()
+    return tensor.switch(norm > (threshold**2),
+                         t / tensor.sqrt(norm) * threshold,
+                         t)
+
 
 def concatenate(tensor_list, axis=0):
     """

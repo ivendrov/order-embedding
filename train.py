@@ -138,25 +138,6 @@ def trainer(data='coco',  #f8k, f30k, coco
 
     trng, inps, cost = build_model(tparams, model_options)
 
-    # before any regularizer
-    print 'Building f_log_probs...',
-    f_log_probs = theano.function(inps, cost, profile=False)
-    print 'Done'
-
-    # weight decay, if applicable
-    if decay_c > 0.:
-        decay_c = theano.shared(numpy.float32(decay_c), name='decay_c')
-        weight_decay = 0.
-        for kk, vv in tparams.iteritems():
-            weight_decay += (vv ** 2).sum()
-        weight_decay *= decay_c
-        cost += weight_decay
-
-    # after any regularizer
-    print 'Building f_cost...',
-    f_cost = theano.function(inps, cost, profile=False)
-    print 'Done'
-
     print 'Building sentence encoder'
     trng, inps_se, sentences = build_sentence_encoder(tparams, model_options)
     f_senc = theano.function(inps_se, sentences, profile=False)
@@ -174,18 +155,16 @@ def trainer(data='coco',  #f8k, f30k, coco
     inps_err, errs = build_errors(model_options)
     f_err = theano.function(inps_err, errs, profile=False)
 
-
+    curr_model = dict()
+    curr_model['options'] = model_options
+    curr_model['worddict'] = worddict
+    curr_model['word_idict'] = word_idict
+    curr_model['f_senc'] = f_senc
+    curr_model['f_ienc'] = f_ienc
+    curr_model['f_err'] = f_err
 
     if grad_clip > 0.:
-        g2 = 0.
-        for g in grads:
-            g2 += (g**2).sum()
-        new_grads = []
-        for g in grads:
-            new_grads.append(tensor.switch(g2 > (grad_clip**2),
-                                           g / tensor.sqrt(g2) * grad_clip,
-                                           g))
-        grads = new_grads
+        grads = [maxnorm(g, grad_clip) for g in grads]
 
     lr = tensor.scalar(name='lr')
     print 'Building optimizers...',
@@ -226,13 +205,6 @@ def trainer(data='coco',  #f8k, f30k, coco
             if numpy.mod(uidx, validFreq) == 0:
 
                 print 'Computing results...'
-                curr_model = {}
-                curr_model['options'] = model_options
-                curr_model['worddict'] = worddict
-                curr_model['word_idict'] = word_idict
-                curr_model['f_senc'] = f_senc
-                curr_model['f_ienc'] = f_ienc
-                curr_model['f_err'] = f_err
 
                 # encode sentences efficiently
                 dev_s = encode_sentences(curr_model, dev_caps, batch_size=batch_size)
