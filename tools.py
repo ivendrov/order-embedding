@@ -26,28 +26,17 @@ def load_model(path_to_model=default_model):
     """
     print path_to_model
 
-    # Load the worddict
-    print 'Loading dictionary...'
-    with open('%s.dictionary.pkl'%path_to_model, 'rb') as f:
-        worddict = pkl.load(f)
-
-    # Create inverted dictionary
-    print 'Creating inverted dictionary...'
-    word_idict = dict()
-    for kk, vv in worddict.iteritems():
-        word_idict[vv] = kk
-    word_idict[0] = '<eos>'
-    word_idict[1] = 'UNK'
-
-    # Load model options
-    print 'Loading model options...'
+    # Load model
+    print 'Loading model'
     with open('%s.pkl'%path_to_model, 'rb') as f:
-        options = pkl.load(f)
+        model = pkl.load(f)
+
+    options = model['options']
 
     # Load parameters
     print 'Loading model parameters...'
     params = init_params(options)
-    params = load_params(path_to_model, params)
+    params = load_params(path_to_model, params) # TODO figure this out
     tparams = init_tparams(params)
 
     # Extractor functions
@@ -62,10 +51,6 @@ def load_model(path_to_model=default_model):
 
     # Store everything we need in a dictionary
     print 'Packing up...'
-    model = {}
-    model['options'] = options
-    model['worddict'] = worddict
-    model['word_idict'] = word_idict
     model['f_senc'] = f_senc
     model['f_ienc'] = f_ienc
     return model

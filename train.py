@@ -73,20 +73,11 @@ def trainer(load_from=None,
 
     # Create dictionary
     print 'Creating dictionary'
-    worddict = build_dictionary(train['caps']+dev['caps'])[0]
-    n_words = len(worddict)
-    model_options['n_words'] = n_words
-    print 'Dictionary size: ' + str(n_words)
-
-    # Inverse dictionary
-    word_idict = dict()
-    for kk, vv in worddict.iteritems():
-        word_idict[vv] = kk
-    word_idict[0] = '<eos>'
-    word_idict[1] = 'UNK'
+    worddict, inverse_worddict = build_dictionary(train['caps']+dev['caps'])[0]
+    print 'Dictionary size: ' + str(len(worddict))
 
     curr_model['worddict'] = worddict
-    curr_model['word_idict'] = word_idict
+    curr_model['inverse_worddict'] = inverse_worddict
 
 
     print 'Loading data'
