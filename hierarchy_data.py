@@ -6,11 +6,10 @@ import random
 
 class HierarchyData():
 
-    def __init__(self, data, worddict, batch_size=128, n_words=10000):
+    def __init__(self, data, worddict, batch_size=128):
         self.data = data
         self.batch_size = batch_size
         self.worddict = worddict
-        self.n_words = n_words
         self.num_images = len(self.data['ims'])
         self.parents = defaultdict(set)
         self.reset()
@@ -49,7 +48,7 @@ class HierarchyData():
         seqs = []
         for i in indices:
             cc = self.data['caps'][i]
-            seqs.append([self.worddict[w] if self.worddict[w] < self.n_words else 1 for w in cc.split()])
+            seqs.append([self.worddict[w] if w in self.worddict[w] else 1 for w in cc.split()])
 
         lengths = map(len, seqs)
         n_samples = len(seqs)

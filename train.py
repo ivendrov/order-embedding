@@ -34,27 +34,6 @@ def trainer(load_from=None,
     """
     :param load_from: location to load parameters + options from
     :param name: name of model, used as location to save parameters + options
-    Keyword Arguments are:
-            cnn='ryan'
-            captions='raw'
-            method=None
-            margin=0.2
-            dim=1024
-            dim_image=4096
-            dim_word=300
-            encoder='gru'
-            max_epochs=15
-            dispFreq=10
-            decay_c=0.
-            grad_clip=2.
-            optimizer='adam'
-            batch_size = 128
-            validFreq=100
-            lrate=0.01
-            eps=1e-7
-            norm=1
-            abs=False
-            name='anon'
     """
 
     curr_model = dict()
@@ -111,9 +90,8 @@ def trainer(load_from=None,
 
 
     print 'Loading data'
-    train_iter = hierarchy_data.HierarchyData(train, batch_size=model_options['batch_size'], worddict=worddict,
-                                              n_words=n_words)
-    dev = hierarchy_data.HierarchyData(dev, worddict=worddict, n_words=n_words)
+    train_iter = hierarchy_data.HierarchyData(train, batch_size=model_options['batch_size'], worddict=worddict)
+    dev = hierarchy_data.HierarchyData(dev, worddict=worddict)
     dev_caps, dev_ims = dev.all()
 
     print 'Building model'
