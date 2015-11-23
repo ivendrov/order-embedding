@@ -14,13 +14,7 @@ from scipy.linalg import norm
 from utils import load_params, init_tparams
 from model import init_params, build_sentence_encoder, build_image_encoder
 
-#-----------------------------------------------------------------------------#
-# Specify model location here
-#-----------------------------------------------------------------------------#
-default_model = '/ais/gobi3/u/rkiros/uvsmodels/coco.npz'
-#-----------------------------------------------------------------------------#
-
-def load_model(path_to_model=default_model):
+def load_model(path_to_model):
     """
     Load all model components
     """
@@ -28,7 +22,7 @@ def load_model(path_to_model=default_model):
 
     # Load model
     print 'Loading model'
-    with open('%s.pkl'%path_to_model, 'rb') as f:
+    with open(path_to_model + '.pkl', 'rb') as f:
         model = pkl.load(f)
 
     options = model['options']
@@ -36,7 +30,7 @@ def load_model(path_to_model=default_model):
     # Load parameters
     print 'Loading model parameters...'
     params = init_params(options)
-    params = load_params(path_to_model, params) # TODO figure this out
+    params = load_params(path_to_model + '.npz', params)
     tparams = init_tparams(params)
 
     # Extractor functions

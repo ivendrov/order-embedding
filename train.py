@@ -116,7 +116,10 @@ def trainer(load_from=None,
     curr_model['f_senc'] = f_senc
     curr_model['f_ienc'] = f_ienc
     curr_model['f_err'] = f_err
-    curr_model['params'] = unzip(tparams)
+
+    # save model
+    pkl.dump(curr_model, open('%s/%s.pkl'%(save_dir, name), 'wb'))
+
 
     if model_options['grad_clip'] > 0.:
         grads = [maxnorm(g, model_options['grad_clip']) for g in grads]
@@ -191,7 +194,7 @@ def trainer(load_from=None,
                     curr = tot
                     # Save model
                     print 'Saving...',
-                    pkl.dump(curr_model, open('%s/%s.pkl'%(save_dir, name), 'wb'))
+                    numpy.savez('%s/%s'%(save_dir, name), **unzip(tparams))
                     print 'Done'
 
 
