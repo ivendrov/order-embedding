@@ -15,7 +15,6 @@ This code is written in python. To use it you will need:
 * Python 2.7
 * Theano 0.7
 * A recent version of [NumPy](http://www.numpy.org/) and [SciPy](http://www.scipy.org/)
-* TODO others?
 
 ## Replicating the paper
 
@@ -109,10 +108,14 @@ If you're training on Flickr8k or Flickr30k, just put [Karpathy's](http://cs.sta
 
 The evaluation (`evaluation.py`) and batching (`datasource.py`) assume that there are exactly 5 captions per image; if your dataset doesn't have this property, you will need to modify them.
 
-## Visualization
+## Visualizations
 
+### Training curves
+For models you train, you can view plots of training error and ranking metrics by navigating to the `vis_training` directory, and running
 
-
+    python -m SimpleHTTPServer
+    
+Now, connect to the running server using any browser (usually by pointing it to `localhost:8000`).
 
 
 ## Reference
