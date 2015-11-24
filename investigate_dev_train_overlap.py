@@ -1,9 +1,9 @@
 # coding: utf-8
-import hierarchy_data, datasets
+import datasource, datasets
 d = load_dataset('denotation')
 d = datasets.load_dataset('denotation')
-dev = hierarchy_data.HierarchyData(d['dev'], {})
-train = hierarchy_data.HierarchyData(d['train'], {})
+dev = datasource.Datasource(d['dev'], {})
+train = datasource.Datasource(d['train'], {})
 dev_caps, dev_edges, dev_target = dev.all()
 train_caps, train_edges, train_target = train.all()
 train_set = {}

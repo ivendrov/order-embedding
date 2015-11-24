@@ -7,7 +7,7 @@ import numpy
 
 
 import datasets
-from hierarchy_data import HierarchyData
+from datasource import Datasource
 import tools
 
 def ranking_eval_5fold(model, split='dev'):
@@ -23,7 +23,7 @@ def ranking_eval_5fold(model, split='dev'):
     for fold in range(5):
         print 'Loading fold ' + str(fold)
         dataset = datasets.load_dataset(data, cnn, load_train=False, fold=fold)
-        caps, ims = HierarchyData(dataset[split], model['worddict']).all()
+        caps, ims = Datasource(dataset[split], model['worddict']).all()
 
         print 'Computing results...'
         c_emb = tools.encode_sentences(model, caps)

@@ -8,7 +8,7 @@ import cPickle as pkl
 import os
 import time
 
-import hierarchy_data
+import datasource
 
 from utils import *
 from optim import adam
@@ -72,8 +72,8 @@ def trainer(load_from=None,
 
 
     print 'Loading data'
-    train_iter = hierarchy_data.HierarchyData(train, batch_size=model_options['batch_size'], worddict=worddict)
-    dev = hierarchy_data.HierarchyData(dev, worddict=worddict)
+    train_iter = datasource.Datasource(train, batch_size=model_options['batch_size'], worddict=worddict)
+    dev = datasource.Datasource(dev, worddict=worddict)
     dev_caps, dev_ims = dev.all()
 
     print 'Building model'
