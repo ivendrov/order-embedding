@@ -1,12 +1,8 @@
 # order-embeddings
 
-Theano implementation of caption-image retrieval and textual entailment from the paper ["Order-Embeddings of Images and Language"](http://arxiv.org/abs/1511.06361)
+Theano implementation of caption-image retrieval from the paper ["Order-Embeddings of Images and Language"](http://arxiv.org/abs/1511.06361).
 
-[](Describe the ideas of the paper)
-
-
-## Visualization
-[](add links to ranking comparison)
+TODO Describe the ideas of the paper
 
 ## Dependencies
 
@@ -73,25 +69,25 @@ As the model trains, it will periodically evaluate on the development set and re
 `train.trainer` has many hyperparameters; see `driver.py` for the ones used in the paper. Descriptions of each hyperparameter follow:
 
 
-### Saving / Loading
+#### Saving / Loading
 * **name**: a string describing the model, used for saving + visualization
 * **save_dir**: the location to save model snapshots
 * **load_from**: location of model from which to load existing parameters
 * **dispFreq**: How often to display training progress (in batches)
 * **validFreq**: How often to evaluate on the development set
 
-### Data
+#### Data
 * **data**: The dataset to train on (currently only 'coco' is supported)
 * **cnn**: The name of the CNN features to use, if you want to evaluate different image features
 
-### Architecture
+#### Architecture
 * **dim**: The dimensionality of the learned embedding space (also the size of the RNN state)
 * **dim_image**: The dimensionality of the image features. This will be 4096 for VGG
 * **dim_word**: The dimensionality of the learned word embeddings
 * **encoder**: The type of RNN to use to encode sentences (currently only 'gru' is supported)
 * **margin**: The margin used for computing the pairwise ranking loss
 
-### Training
+#### Training
 * **optimizer**: The optimization method to use (currently only 'adam' is supported)
 * **batch_size**: The size of a minibatch.
 * **max_epochs**: The number of epochs used for training
