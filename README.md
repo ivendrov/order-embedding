@@ -25,10 +25,10 @@ Download the dataset files, including 10-crop [VGG19 features](http://www.robots
 
     wget http://www.cs.toronto.edu/~vendrov/datasets/coco.zip
    
-Note that we use the splits produced by [Andrej Karpathy](http://cs.stanford.edu/people/karpathy/deepimagesent/). The full COCO dataset
+Note that we use the [splits](http://cs.stanford.edu/people/karpathy/deepimagesent/) produced by Andrej Karpathy. The full COCO dataset
 can be obtained [here](http://mscoco.org/).
     
-In `paths.py`, point `datasets_dir` to where you unzipped the data.
+In `paths.py`, point `datasets_dir` to where you unzipped the dataset files.
     
 ### Evaluating pre-trained models
 
@@ -36,61 +36,83 @@ Download the pre-trained models used in the paper by running
 
     wget http://www.cs.toronto.edu/~vendrov/datasets/order-models.zip
     
+Evaluate by running 
 
+```python
 
-
-
+    import tools, evaluation
+    model = tools.load_model('path_to_model')
+    evaluation.ranking_eval_5fold(model, split='test')
+```
     
 
 ## Computing image and sentence vectors
 
 Suppose you have a list of strings that you would like to embed into the learned vector space. To embed them, run the following:
 
-    sentence_vectors = tools.encode_sentences(model, X, verbose=True)
+    sentence_vectors = tools.encode_sentences(model, s, verbose=True)
     
-Where 'X' is the list of strings. Note that the strings should already be pre-tokenized, so that split() returns the tokens.
+Where `s` is the list of strings. Note that the strings should already be pre-tokenized, so that `str.split()` returns the tokens.
 
 As the vectors are being computed, it will print some numbers. The code works by extracting vectors in batches of sentences that have the same length - so the number corresponds to the current length being processed. If you want to turn this off, set verbose=False when calling encode.
 
 To encode images, run the following instead:
 
-    image_vectors = tools.encode_images(model, IM)
+    image_vectors = tools.encode_images(model, im)
     
-Where 'IM' is a NumPy array of VGG features. Note that the VGG features were scaled to unit norm prior to training the models.
+Where `im` is a NumPy array of VGG features. Note that the VGG features were scaled to unit norm prior to training the models.
 
 ## Training new models
 
-Open `train.py` and specify the hyperparameters that you would like. Below we describe each of them in detail:
-
-* data: The dataset to train on (f8k, f30k or coco).
-* margin: The margin used for computing the pairwise ranking loss. Should be between 0 and 1.
-* dim: The dimensionality of the learned embedding space (also the size of the RNN state).
-* dim_image: The dimensionality of the image features. This will be 4096 for VGG.
-* dim_word: The dimensionality of the learned word embeddings.
-* ncon: The number of contrastive (negative) examples for computing the loss.
-* encoder: The type of RNN to use. Only supports gru at the moment.
-* max_epochs: The number of epochs used for training.
-* dispFreq: How often to display training progress.
-* decay_c: The weight decay hyperparameter.
-* grad_clip: When to clip the gradient.
-* maxlen_w: Sentences longer then this value will be ignored.
-* optimizer: The optimization method to use. Only supports 'adam' at the moment.
-* batch_size: The size of a minibatch.
-* saveto: The location to save the model.
-* validFreq: How often to evaluate on the development set.
-* reload_: Whether to reload a previously trained model.
-
-Once you are happy, just run the following:
+To train your own models, simply run 
 
     import train
-    train.trainer()
-    
-As the model trains, it will periodically evaluate on the development set (validFreq) and re-save the model each time performance on the development set increases. Generally you shouldn't need more than 15-20 epochs of training on any of the datasets. Once the models are saved, you can load and evaluate them in the same way as the pre-trained models.
+    train.trainer(**kwargs)
 
+As the model trains, it will periodically evaluate on the development set and re-save the model each time performance on the development set increases. Once the models are saved, you can load and evaluate them in the same way as the pre-trained models.
+
+`train.trainer` has many hyperparameters; see `driver.py` for the ones used in the paper. Descriptions of each hyperparameter follow:
+
+
+### Saving / Loading
+* **name**: a string describing the model, used for saving + visualization
+* **save_dir**: the location to save model snapshots
+* **load_from**: location of model from which to load existing parameters
+* **dispFreq**: How often to display training progress (in batches)
+* **validFreq**: How often to evaluate on the development set
+
+### Data
+* **data**: The dataset to train on (currently only 'coco' is supported)
+* **cnn**: The name of the CNN features to use, if you want to evaluate different image features
+
+### Architecture
+* **dim**: The dimensionality of the learned embedding space (also the size of the RNN state)
+* **dim_image**: The dimensionality of the image features. This will be 4096 for VGG
+* **dim_word**: The dimensionality of the learned word embeddings
+* **encoder**: The type of RNN to use to encode sentences (currently only 'gru' is supported)
+* **margin**: The margin used for computing the pairwise ranking loss
+
+### Training
+* **optimizer**: The optimization method to use (currently only 'adam' is supported)
+* **batch_size**: The size of a minibatch.
+* **max_epochs**: The number of epochs used for training
+* **lrate**: Learning rate
+* **grad_clip**: Magnitude at which to clip the gradient
+
+    
 ## Training on different datasets
 
+To train on a different dataset, put tokenized sentences and image features in the same format as those provided for COCO,
+add the relevant paths to `paths.py`, and modify `datasets.py` to handle your dataset correctly.
 
-## Exploring Regularities
+If you're training on Flickr8k or Flickr30k, just put [Karpathy's](http://cs.stanford.edu/people/karpathy/deepimagesent/) `dataset_flickr{8,30}k.json` file in the dataset directory, and run the scripts `generate_captions.py` and `extract_cnn_features.py`. The latter script requires a working [Caffe installation](http://caffe.berkeleyvision.org/installation.html), as well as the VGG19 [model spec and weights](https://gist.github.com/ksimonyan/3785162f95cd2d5fee77).
+
+The evaluation (`evaluation.py`) and batching (`datasource.py`) assume that there are exactly 5 captions per image; if your dataset doesn't have this property, you will need to modify them.
+
+## Visualization
+
+
+
 
 
 ## Reference

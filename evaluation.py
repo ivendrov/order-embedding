@@ -1,5 +1,7 @@
 """
-Evaluation code for multimodal-ranking
+Evaluation code for multimodal ranking
+Throughout, we assume 5 captions per image, and that
+captions[5i:5i+5] are GT descriptions of images[i]
 """
 import numpy
 
@@ -7,27 +9,21 @@ import numpy
 import datasets
 from hierarchy_data import HierarchyData
 import tools
-from model import build_errors
-import theano
 
-def evalrank(model, split='dev'):
+def ranking_eval_5fold(model, split='dev'):
     """
     Evaluate a trained model on either dev or test of the dataset it was trained on
+    Evaluate separately on 5 1000-image splits, and average the metrics
     """
     data = model['options']['data']
     cnn = model['options']['cnn']
-    captions = model['options']['captions']
-    if 'f_err' not in model: # for legacy models
-        inps, errs = build_errors(model['options'])
-        model['f_err'] = theano.function(inps, errs)
-
 
     results = []
 
-    for coco_split in range(5):
-        print 'Loading dataset...'
-        dataset = datasets.load_dataset(data, cnn, captions, load_train=False, coco_split=coco_split)
-        caps, ims = HierarchyData(dataset[split], model['worddict'], n_words=len(model['worddict'])).all()
+    for fold in range(5):
+        print 'Loading fold ' + str(fold)
+        dataset = datasets.load_dataset(data, cnn, load_train=False, fold=fold)
+        caps, ims = HierarchyData(dataset[split], model['worddict']).all()
 
         print 'Computing results...'
         c_emb = tools.encode_sentences(model, caps)
@@ -43,7 +39,12 @@ def evalrank(model, split='dev'):
         print "Image to text: %.1f, %.1f, %.1f, %.1f, %.1f" % ri
         results.append(list(r) + list(ri))
 
-    return numpy.array(results).mean(axis=0)
+    print("-----------------------------------")
+    print("Mean metrics: ")
+    mean_metrics = numpy.array(results).mean(axis=0).flatten()
+    print "Text to image: %.1f, %.1f, %.1f, %.1f, %.1f" % tuple(mean_metrics[:5])
+    print "Image to text: %.1f, %.1f, %.1f, %.1f, %.1f" % tuple(mean_metrics[5:])
+
 
 def t2i(c2i):
     """
@@ -83,7 +84,6 @@ def i2t(c2i):
 
         rank = numpy.where(inds/5 == i)[0][0]
         ranks[i] = rank
-
 
     # Compute metrics
     r1 = 100.0 * len(numpy.where(ranks < 1)[0]) / len(ranks)

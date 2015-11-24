@@ -28,18 +28,18 @@ def init_params(options):
 
     return params
 
-def hierarchical_errors(s, im, options):
-    return tensor.pow(tensor.maximum(0, s - im), options['norm'])
+def order_violations(s, im, options):
+    return tensor.pow(tensor.maximum(0, s - im), 2)
 
 def contrastive_loss(s, im, options):
 
     margin = options['margin']
 
     scores = None
-    if options['method'] == 'hierarchy':
+    if options['method'] == 'order':
         im2 = im.dimshuffle(('x', 0, 1))
         s2 = s.dimshuffle((0, 'x', 1))
-        scores = hierarchical_errors(s2, im2, options).sum(axis=2)
+        scores = order_violations(s2, im2, options).sum(axis=2)
     elif options['method'] == 'cosine':
         scores = tensor.dot(im, s.T)
 
@@ -150,12 +150,12 @@ def build_errors(options):
     im = tensor.matrix('im', dtype='float32')
 
     errs = None
-    if options['method'] == 'hierarchy':
+    if options['method'] == 'order':
         # trick to make theano not optimize this into a single matrix op, and overflow memory
         indices = tensor.arange(s.shape[0])
 
         # have to do a map in order not to overflow memory here
-        errs, _ = theano.map(lambda i, s, im: hierarchical_errors(s[i], im, options).sum(axis=1).flatten(),
+        errs, _ = theano.map(lambda i, s, im: order_violations(s[i], im, options).sum(axis=1).flatten(),
                           sequences=[indices],
                           non_sequences=[s, im])
     else:
