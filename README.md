@@ -31,12 +31,12 @@ Download the pre-trained models used in the paper by running
 
     wget http://www.cs.toronto.edu/~vendrov/datasets/order-models.zip
     
-Evaluate by running 
+Unzip the file in the project directory, and evaluate by running 
 
 ```python
 
     import tools, evaluation
-    model = tools.load_model('path_to_model')
+    model = tools.load_model('snapshots/order')
     evaluation.ranking_eval_5fold(model, split='test')
 ```
     

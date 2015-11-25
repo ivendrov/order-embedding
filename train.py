@@ -48,7 +48,7 @@ def trainer(load_from=None,
     timestampedName = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S') + '_' + name
 
     from logger import Log
-    log = Log(name=timestampedName, hyperparams=model_options, saveDir='vis_training/static',
+    log = Log(name=timestampedName, hyperparams=model_options, saveDir='vis/training',
               xLabel='Examples Seen', saveFrequency=1)
 
 

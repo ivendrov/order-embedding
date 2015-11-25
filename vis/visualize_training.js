@@ -3,7 +3,7 @@ function init() {
 
     var model_select = d3.select("#model_select").select("[name=model]");
 
-    d3.json("static/index.json", function (data) {
+    d3.json("training/index.json", function (data) {
 
         update_select(model_select, data);
 
@@ -74,7 +74,7 @@ function loadModels(modelnames, callback){
     models = [];
 
     modelnames.forEach(function(modelname){
-        d3.json('static/' + modelname + '.json', function(data){
+        d3.json('training/' + modelname + '.json', function(data){
             models.push(data);
             if (models.length == modelnames.length)
                 displayModels()
