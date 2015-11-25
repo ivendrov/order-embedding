@@ -14,6 +14,7 @@ on your own data, or if you want to modify the visualizations themselves, the fo
 #### Expected File Structure
 
 `training/index.json`: list of experiments to be visualized
+
 `training/{experimentName}.json`: stores training trace of the given experiment
 
 #### JSON Schema for training trace
@@ -39,6 +40,7 @@ Displays the entire precision-recall curve, allowing a more detailed analysis of
 `roc/index.json`: index file for all visualization files // TODO add schema
 
 `roc/{dataset}/{split}/image_urls.json` : index file mapping image ids to image urls
+
 `roc/{dataset}/{split}/captions.json` : index file mapping caption ids to full caption text
 
 `roc/{dataset}/{split}/{experimentName}/index.json` : index file for the experiment (contains statistics + links to the caption files)
