@@ -28,11 +28,18 @@ def init_params(options):
 
     return params
 
+
 def order_violations(s, im, options):
+    """
+    Computes the order violations (Equation 2 in the paper)
+    """
     return tensor.pow(tensor.maximum(0, s - im), 2)
 
-def contrastive_loss(s, im, options):
 
+def contrastive_loss(s, im, options):
+    """
+    For a minibatch of sentence and image embeddings, compute the pairwise contrastive loss
+    """
     margin = options['margin']
 
     scores = None
@@ -43,31 +50,20 @@ def contrastive_loss(s, im, options):
     elif options['method'] == 'cosine':
         scores = tensor.dot(im, s.T)
 
-
     diagonal = scores.diagonal()
 
     cost_s = tensor.maximum(0, margin - scores + diagonal)  # compare every diagonal score to scores in its column (all contrastive images for each sentence)
     cost_im = tensor.maximum(0, margin - scores + diagonal.reshape((-1, 1)))  # all contrastive sentences for each image
 
-
     cost_tot = cost_s + cost_im
 
-    # clear diagonals (comparison of
+    # clear diagonals
     cost_tot = fill_diagonal(cost_tot, 0)
-
 
     return cost_tot.sum()
 
 
-def build_model(tparams, options):
-    """
-    Computation graph for the model
-    """
-    # description string: #words x #samples
-    x = tensor.matrix('x', dtype='int64')
-    mask = tensor.matrix('mask', dtype='float32')
-    im = tensor.matrix('im', dtype='float32')
-
+def encode_sentences(tparams, options, x, mask):
     n_timesteps = x.shape[0]
     n_samples = x.shape[1]
 
@@ -78,21 +74,37 @@ def build_model(tparams, options):
     proj = get_layer(options['encoder'])[1](tparams, emb, None, options,
                                             prefix='encoder',
                                             mask=mask)
-    sents = proj[0][-1]
-
-    # Encode images (source)
-    images = get_layer('ff')[1](tparams, im, options, prefix='ff_image', activ='linear')
-
-
-    images = l2norm(images)
-    sents = l2norm(sents)
-
+    s = l2norm(proj[0][-1])
     if options['abs']:
-        images = abs(images)
-        sents = abs(sents)
+        s = abs(s)
+
+    return s
+
+def encode_images(tparams, options, im):
+    im_emb = get_layer('ff')[1](tparams, im, options, prefix='ff_image', activ='linear')
+    im_emb = l2norm(im_emb)
+    if options['abs']:
+        im_emb = abs(im_emb)
+
+    return im_emb
+
+
+
+
+def build_model(tparams, options):
+    """
+    Computation graph for the entire model
+    """
+    x = tensor.matrix('x', dtype='int64')
+    mask = tensor.matrix('mask', dtype='float32')
+    im = tensor.matrix('im', dtype='float32')
+
+    # embed sentences and images
+    s_emb = encode_sentences(tparams, options, x, mask)
+    im_emb = encode_images(tparams, options, im)
 
     # Compute loss
-    cost = contrastive_loss(sents, images, options)
+    cost = contrastive_loss(s_emb, im_emb, options)
 
     return [x, mask, im], cost
 
@@ -102,29 +114,11 @@ def build_sentence_encoder(tparams, options):
     """
     Encoder only, for sentences
     """
-    # description string: #words x #samples
+    # sentence features
     x = tensor.matrix('x', dtype='int64')
-    mask = tensor.matrix('x_mask', dtype='float32')
+    mask = tensor.matrix('mask', dtype='float32')
 
-    n_timesteps = x.shape[0]
-    n_samples = x.shape[1]
-
-    # Word embedding
-    emb = tparams['Wemb'][x.flatten()].reshape([n_timesteps, n_samples, options['dim_word']])
-
-    # Encode sentences
-    proj = get_layer(options['encoder'])[1](tparams, emb, None, options,
-                                            prefix='encoder',
-                                            mask=mask)
-    sents = proj[0][-1]
-
-    if options['abs']:
-        sents = abs(sents)
-
-
-    sents = l2norm(sents)
-
-    return [x, mask], sents
+    return [x, mask], encode_sentences(tparams, options, x, mask)
 
 def build_image_encoder(tparams, options):
     """
@@ -132,36 +126,27 @@ def build_image_encoder(tparams, options):
     """
     # image features
     im = tensor.matrix('im', dtype='float32')
-
-    # Encode images
-    images = get_layer('ff')[1](tparams, im, options, prefix='ff_image', activ='linear')
-    images = l2norm(images)
-
-    if options['abs']:
-        images = abs(images)
     
-    return [im], images
+    return [im], encode_images(tparams, options, im)
 
 
 def build_errors(options):
     """ Given sentence and image embeddings, compute the score matrix """
     # input features
-    s = tensor.matrix('s', dtype='float32')
-    im = tensor.matrix('im', dtype='float32')
+    s_emb = tensor.matrix('s_emb', dtype='float32')
+    im_emb = tensor.matrix('im_emb', dtype='float32')
 
     errs = None
     if options['method'] == 'order':
-        # trick to make theano not optimize this into a single matrix op, and overflow memory
-        indices = tensor.arange(s.shape[0])
-
-        # have to do a map in order not to overflow memory here
+        # trick to make Theano not optimize this into a single matrix op, and overflow memory
+        indices = tensor.arange(s_emb.shape[0])
         errs, _ = theano.map(lambda i, s, im: order_violations(s[i], im, options).sum(axis=1).flatten(),
-                          sequences=[indices],
-                          non_sequences=[s, im])
+                             sequences=[indices],
+                             non_sequences=[s_emb, im_emb])
     else:
-        errs = tensor.dot(s, im.T)
+        errs = tensor.dot(s_emb, im_emb.T)
 
-    return [s, im], errs
+    return [s_emb, im_emb], errs
 
 
 
