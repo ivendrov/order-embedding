@@ -43,7 +43,7 @@ Displays the entire precision-recall curve, allowing a more detailed analysis of
 
 `roc/{dataset}/{split}/captions.json` : index file mapping caption ids to full caption text
 
-`roc/{dataset}/{split}/{experimentName}/index.json` : index file for the experiment (contains statistics + links to the caption files)
+`roc/{dataset}/{split}/{experimentName}.json` : index file for the experiment (contains statistics + top images for each caption)
 
 JSON schemas for all the types of files are listed below:
 
@@ -53,15 +53,14 @@ JSON schemas for all the types of files are listed below:
 index.json := {
     "stats":[stat]
     "sentences":[sentence]
-    "images": images
 }
 stat := {
-    "name":str,
+    "name": str
     "value": num
 }
 sentence := {
-    "id":int
-    "rank":int,
+    "id": int
+    "rank": int
     "gt_image": image
     "top_images": [image]
 }
@@ -69,6 +68,5 @@ sentence := {
 image := {
     "id": int
     "score": float
-    "is_gt": bool
 }
 ```

@@ -4,6 +4,7 @@ Main trainer function
 import theano
 
 import cPickle as pkl
+import json
 
 import os
 import time
@@ -157,21 +158,12 @@ def trainer(load_from=None,
                 dev_s = encode_sentences(curr_model, dev_caps, batch_size=model_options['batch_size'])
                 dev_i = encode_images(curr_model, dev_ims)
 
-                s_norm = float(numpy.linalg.norm(dev_s, axis=1).mean())
-                i_norm = float(numpy.linalg.norm(dev_i, axis=1).mean())
-                print("Mean Norms: sentence %.3f, image %.3f" % (s_norm, i_norm))
-                log.update({'MeanSentenceNorm': s_norm, 'MeanImageNorm': i_norm}, n_samples)
-
 
                 # compute errors
                 dev_errs = compute_errors(curr_model, dev_s, dev_i)
 
-                mean_err = float(dev_errs.mean())
-                print("Mean error: %.3f" % mean_err)
-                log.update({'MeanError': mean_err}, n_samples)
-
                 # compute ranking error
-                (r1, r5, r10, medr, meanr) = t2i(dev_errs)
+                (r1, r5, r10, medr, meanr), vis_details = t2i(dev_errs, vis_details=True)
                 (r1i, r5i, r10i, medri, meanri) = i2t(dev_errs)
                 print "Text to image: %.1f, %.1f, %.1f, %.1f, %.1f" % (r1, r5, r10, medr, meanr)
                 log.update({'R@1': r1, 'R@5': r5, 'R@10': r10, 'median_rank': medr, 'mean_rank': meanr}, n_samples)
@@ -185,6 +177,21 @@ def trainer(load_from=None,
                     print 'Saving...',
                     numpy.savez('%s/%s'%(save_dir, name), **unzip(tparams))
                     print 'Done'
+
+                    # Save visualization details
+                    with open('vis/roc/%s/%s.json' % (model_options['data'], name), 'w') as f:
+                        json.dump(vis_details, f)
+                    # Add the new model to the index
+                    index = json.load(open('vis/roc/index.json', 'r'))
+                    models = index[model_options['data']]
+                    if timestampedName not in models:
+                        models.append(timestampedName)
+
+                    with open('vis/roc/index.json', 'w') as f:
+                        json.dump(index, f)
+
+
+
 
 
 
