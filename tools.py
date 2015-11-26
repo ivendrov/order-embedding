@@ -10,7 +10,7 @@ from collections import OrderedDict, defaultdict
 from scipy.linalg import norm
 
 from utils import load_params, init_tparams
-from model import init_params, build_sentence_encoder, build_image_encoder
+from model import init_params, build_sentence_encoder, build_image_encoder, build_errors
 
 def load_model(path_to_model):
     """
@@ -40,10 +40,15 @@ def load_model(path_to_model):
     [im], images = build_image_encoder(tparams, options)
     f_ienc = theano.function([im], images, name='f_ienc')
 
+    print 'Compiling error computation...'
+    [s, im], errs = build_errors(options)
+    f_err = theano.function([s,im], errs, name='f_err')
+
     # Store everything we need in a dictionary
     print 'Packing up...'
     model['f_senc'] = f_senc
     model['f_ienc'] = f_ienc
+    model['f_err'] = f_err
     return model
 
 def encode_sentences(model, X, verbose=False, batch_size=128):
