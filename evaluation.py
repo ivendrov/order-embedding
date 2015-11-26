@@ -69,12 +69,12 @@ def t2i(c2i, vis_details=False):
             return {'id': k, 'score': float(d_i[k])}
 
         if vis_details:  # save top 10 images as well as GT image and their scores
-            vis_dict['sentences'] = {
+            vis_dict['sentences'].append({
                 'id': i,
-                'rank': rank,
+                'rank': rank + 1,
                 'gt_image': image_dict(i/5),
                 'top_images': map(image_dict, inds[:10])
-            }
+            })
 
     # Compute metrics
     r1 = 100.0 * len(numpy.where(ranks < 1)[0]) / len(ranks)

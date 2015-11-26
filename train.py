@@ -177,9 +177,9 @@ def trainer(load_from=None,
                     print 'Saving...',
                     numpy.savez('%s/%s'%(save_dir, name), **unzip(tparams))
                     print 'Done'
-
+                    vis_details['hyperparams'] = model_options
                     # Save visualization details
-                    with open('vis/roc/%s/%s.json' % (model_options['data'], name), 'w') as f:
+                    with open('vis/roc/%s/%s.json' % (model_options['data'], timestampedName), 'w') as f:
                         json.dump(vis_details, f)
                     # Add the new model to the index
                     index = json.load(open('vis/roc/index.json', 'r'))
