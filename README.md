@@ -33,7 +33,7 @@ In `paths.py`, point `datasets_dir` to where you unzipped the dataset files.
     
 ### Evaluating pre-trained models
 
-Download the pre-trained models used in the paper by running 
+Download two pre-trained models (the full model, and the symmetric baseline) by running
 
     wget http://www.cs.toronto.edu/~vendrov/datasets/order-models.zip
     
@@ -124,7 +124,7 @@ Now, connect to the running server using any browser (usually by pointing it to 
 
 If you found this code useful, please cite the following paper:
 
-Ivan Vendrov Ryan Kiros, Sanja Fidler, Raquel Urtasun. **"Order-Embeddings of Images and Language."** *arXiv preprint arXiv:1511.06361 (2015).*
+Ivan Vendrov, Ryan Kiros, Sanja Fidler, Raquel Urtasun. **"Order-Embeddings of Images and Language."** *arXiv preprint arXiv:1511.06361 (2015).*
 
     @article{vendrov2015order,
       title={Order-embeddings of images and language},
