@@ -2,7 +2,13 @@
 
 Theano implementation of caption-image retrieval from the paper ["Order-Embeddings of Images and Language"](http://arxiv.org/abs/1511.06361).
 
-TODO Describe the ideas of the paper
+Similar to [visual-semantic-embedding](https://github.com/ryankiros/visual-semantic-embedding) of which this repository is a fork, 
+we map images and their captions into a common vector space. The main difference, as explained in the paper, is that we model
+the caption-image relationship as an (asymmetric) partial order rather than a symmetric similarity relation.
+
+The code differs from visual-semantic-embedding in a number of other ways, including using 10-crop averaged VGG features for the 
+image representation, and adding a visualization server.
+
 
 ## Dependencies
 

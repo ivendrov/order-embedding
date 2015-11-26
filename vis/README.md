@@ -4,14 +4,14 @@
 Run `python -m SimpleHTTPServer` in this directory. Then point your browser to the running server (usually at `localhost:8000`)
 and open either `visualize_training.html` or `visualize_roc.html`.
 
-Note that modern browsers like Chrome will usually cache files, making it hard to monitor models as they are training. I use
+Note that modern browsers like Chrome will cache files, making it hard to monitor models as they are training. I use
 the [Cache Killer](https://chrome.google.com/webstore/detail/cache-killer/jpfbieopdmepaolggioebjmedmclkbap?hl=en) Chrome extension to
 circumvent this.
 
 The visualizations use a number of JSON files stored in the `training` and `roc` directories. 
 If you train using COCO and cross-validate on the first 1000 images of the validation set (the default) you don't
 need to change anything - the `train.py` script will generate all necessary files for you. If you want to train
-on your own data, or if you want to modify the visualizations themselves, the following may prove helpful:
+on your own data, or if you want to modify the visualizations themselves, the following documentation may prove helpful:
 
 ## Training Visualization
 
