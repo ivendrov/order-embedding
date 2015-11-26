@@ -30,6 +30,8 @@ Note that we use the [splits](http://cs.stanford.edu/people/karpathy/deepimagese
 can be obtained [here](http://mscoco.org/).
     
 Unzip the downloaded file - if not in the project directory, you'll need to change the `datasets_dir` variable in `paths.py`.
+
+**note for Toronto users**: just run `ln -s /ais/gobi1/vendrov/order/coco data/coco` instead
     
 ### Evaluating pre-trained models
 
