@@ -29,7 +29,7 @@ Download the dataset files (1 GB), including 10-crop [VGG19 features](http://www
 Note that we use the [splits](http://cs.stanford.edu/people/karpathy/deepimagesent/) produced by Andrej Karpathy. The full COCO dataset
 can be obtained [here](http://mscoco.org/).
     
-Unzip the downloaded file in the project directory `paths.py`, point `datasets_dir` to where you unzipped the dataset files.
+Unzip the downloaded file - if not in the project directory, you'll need to change the `datasets_dir` variable in `paths.py`.
     
 ### Evaluating pre-trained models
 
