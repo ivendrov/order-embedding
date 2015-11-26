@@ -33,11 +33,11 @@ def ranking_eval_5fold(model, split='dev'):
 
 
         r = t2i(errs)
-        print "Text to image: %.1f, %.1f, %.1f, %.1f, %.1f" % r
+        print "Text to image: %.1f, %.1f, %.1f, %.1f, %.1f" % tuple(r)
 
         ri = i2t(errs)
-        print "Image to text: %.1f, %.1f, %.1f, %.1f, %.1f" % ri
-        results.append(list(r) + list(ri))
+        print "Image to text: %.1f, %.1f, %.1f, %.1f, %.1f" % tuple(ri)
+        results.append(r + ri)
 
     print("-----------------------------------")
     print("Mean metrics: ")
