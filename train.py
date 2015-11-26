@@ -71,6 +71,9 @@ def trainer(load_from=None,
     curr_model['worddict'] = worddict
     curr_model['options']['n_words'] = len(worddict) + 2
 
+    # save model
+    pkl.dump(curr_model, open('%s/%s.pkl' % (save_dir, name), 'wb'))
+
 
     print 'Loading data'
     train_iter = datasource.Datasource(train, batch_size=model_options['batch_size'], worddict=worddict)
@@ -102,13 +105,10 @@ def trainer(load_from=None,
     inps_err, errs = build_errors(model_options)
     f_err = theano.function(inps_err, errs, profile=False)
 
-
     curr_model['f_senc'] = f_senc
     curr_model['f_ienc'] = f_ienc
     curr_model['f_err'] = f_err
 
-    # save model
-    pkl.dump(curr_model, open('%s/%s.pkl'%(save_dir, name), 'wb'))
 
 
     if model_options['grad_clip'] > 0.:
@@ -173,7 +173,7 @@ def trainer(load_from=None,
                 tot = r1 + r5 + r10
                 if tot > curr:
                     curr = tot
-                    # Save model
+                    # Save parameters
                     print 'Saving...',
                     numpy.savez('%s/%s'%(save_dir, name), **unzip(tparams))
                     print 'Done'

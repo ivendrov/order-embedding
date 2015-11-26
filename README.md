@@ -112,13 +112,8 @@ The evaluation (`evaluation.py`) and batching (`datasource.py`) assume that ther
 
 ## Visualizations
 
-### Training curves
-For models you train, you can view plots of training error and ranking metrics by navigating to the `vis_training` directory, and running
-
-    python -m SimpleHTTPServer
-    
-Now, connect to the running server using any browser (usually by pointing it to `localhost:8000`).
-
+You can view plots of training errors and ranking metrics, as well as ROC curves for Image Retrieval, by running the visualization server.
+See the `vis` directory for more details.
 
 ## Reference
 

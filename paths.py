@@ -2,7 +2,7 @@ import numpy
 
 # location for captions and image CNN features
 dataset_dir = {
-    'coco': '/ais/gobi1/vendrov/QandA/hierarchy/coco',
+    'coco': 'data/coco',
 }
 
 
