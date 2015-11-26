@@ -22,20 +22,20 @@ This code is written in python. To use it you will need:
 
 ### Getting data
 
-Download the dataset files, including 10-crop [VGG19 features](http://www.robots.ox.ac.uk/~vgg/research/very_deep/), by running
+Download the dataset files (1 GB), including 10-crop [VGG19 features](http://www.robots.ox.ac.uk/~vgg/research/very_deep/), by running
 
-    wget http://www.cs.toronto.edu/~vendrov/datasets/coco.zip
+    wget http://www.cs.toronto.edu/~vendrov/order/coco.zip
    
 Note that we use the [splits](http://cs.stanford.edu/people/karpathy/deepimagesent/) produced by Andrej Karpathy. The full COCO dataset
 can be obtained [here](http://mscoco.org/).
     
-In `paths.py`, point `datasets_dir` to where you unzipped the dataset files.
+Unzip the downloaded file in the project directory `paths.py`, point `datasets_dir` to where you unzipped the dataset files.
     
 ### Evaluating pre-trained models
 
-Download two pre-trained models (the full model, and the symmetric baseline) by running
+Download two pre-trained models (the full model and the symmetric baseline, 124 MB) and associated visualization data by running
 
-    wget http://www.cs.toronto.edu/~vendrov/datasets/order-models.zip
+    wget http://www.cs.toronto.edu/~vendrov/order/models.zip
     
 Unzip the file in the project directory, and evaluate by running 
 
