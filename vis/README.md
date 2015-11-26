@@ -41,7 +41,7 @@ Displays the entire precision-recall curve, allowing a more detailed analysis of
 
 #### Expected File Structure
 
-`roc/index.json`: index file for all visualization files // TODO add schema
+`roc/index.json`: dictionary mapping each dataset to a list of experiments performed on that dataset
 
 `roc/{dataset}/{split}/image_urls.json` : list of image urls 
 
