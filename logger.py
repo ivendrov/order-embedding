@@ -1,4 +1,9 @@
-# port to Python
+"""
+Defines a Log class, which is used for outputting statistics while a model is training, which
+can then be visualized using vis/visualize_training.html.
+
+The code below is slight modification of https://github.com/ivendrov/torch-logger, see that for detailed documentation.
+"""
 
 import json
 import os

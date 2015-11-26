@@ -1,6 +1,5 @@
 """
-Preprocesses captions, with all instances of 'a', 'the', and  non-alphanumeric tokens removed,
-    remaining tokens converted to lower case and lemmatized.
+Converts Karpathy's dataset.json files to a plain text file for each split, with 1 caption on each line
 """
 from collections import defaultdict
 import json
