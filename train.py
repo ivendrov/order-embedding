@@ -182,7 +182,11 @@ def trainer(load_from=None,
                     with open('vis/roc/%s/%s.json' % (model_options['data'], timestampedName), 'w') as f:
                         json.dump(vis_details, f)
                     # Add the new model to the index
-                    index = json.load(open('vis/roc/index.json', 'r'))
+		    try: 
+                    	index = json.load(open('vis/roc/index.json', 'r'))
+		    except IOError:
+			index = { model_options['data'] : [] }
+
                     models = index[model_options['data']]
                     if timestampedName not in models:
                         models.append(timestampedName)
