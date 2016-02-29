@@ -42,18 +42,17 @@ def contrastive_loss(s, im, options):
     """
     margin = options['margin']
 
-    scores = None
     if options['method'] == 'order':
         im2 = im.dimshuffle(('x', 0, 1))
         s2 = s.dimshuffle((0, 'x', 1))
-        scores = order_violations(s2, im2, options).sum(axis=2)
+        errors = order_violations(s2, im2, options).sum(axis=2)
     elif options['method'] == 'cosine':
-        scores = tensor.dot(im, s.T)
+        errors = - tensor.dot(im, s.T) # negative because error is the opposite of (cosine) similarity
 
-    diagonal = scores.diagonal()
+    diagonal = errors.diagonal()
 
-    cost_s = tensor.maximum(0, margin - scores + diagonal)  # compare every diagonal score to scores in its column (all contrastive images for each sentence)
-    cost_im = tensor.maximum(0, margin - scores + diagonal.reshape((-1, 1)))  # all contrastive sentences for each image
+    cost_s = tensor.maximum(0, margin - errors + diagonal)  # compare every diagonal score to scores in its column (all contrastive images for each sentence)
+    cost_im = tensor.maximum(0, margin - errors + diagonal.reshape((-1, 1)))  # all contrastive sentences for each image
 
     cost_tot = cost_s + cost_im
 
@@ -131,7 +130,7 @@ def build_image_encoder(tparams, options):
 
 
 def build_errors(options):
-    """ Given sentence and image embeddings, compute the score matrix """
+    """ Given sentence and image embeddings, compute the error matrix """
     # input features
     s_emb = tensor.matrix('s_emb', dtype='float32')
     im_emb = tensor.matrix('im_emb', dtype='float32')
@@ -144,7 +143,7 @@ def build_errors(options):
                              sequences=[indices],
                              non_sequences=[s_emb, im_emb])
     else:
-        errs = tensor.dot(s_emb, im_emb.T)
+        errs = - tensor.dot(s_emb, im_emb.T)
 
     return [s_emb, im_emb], errs
 
