@@ -27,7 +27,7 @@ from tools import encode_sentences, encode_images
 from datasets import load_dataset
 
 # main trainer
-def trainer(data='coco',  #f8k, f30k, coco
+def trainer(data='snli',
             margin=0.2,
             dim=1024,
             dim_image=4096,
@@ -40,13 +40,13 @@ def trainer(data='coco',  #f8k, f30k, coco
             maxlen_w=None,
             optimizer='adam',
             batch_size = 128,
-            saveto='/ais/gobi3/u/rkiros/uvsmodels/coco.npz',
             validFreq=100,
-            lrate=0.01,
-            eps=1e-7,
+            lrate=0.001,
+            eps=0,
             norm=1,
             name='anon',
             overfit=False,
+            saveto='',
             load_from = None):
 
     # Model options
@@ -71,12 +71,12 @@ def trainer(data='coco',  #f8k, f30k, coco
     model_options['norm'] = norm
     model_options['load_from'] = load_from
 
-
+    saveto = saveto + '/' + name
     import datetime
     timestampedName = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S') + '_' + name
 
     from logger import Log
-    log = Log(name=timestampedName, hyperparams=model_options, saveDir='vis_training/static',
+    log = Log(name=timestampedName, hyperparams=model_options, saveDir='vis/training/',
               xLabel='Examples Seen', saveFrequency=1)
 
 
