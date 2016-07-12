@@ -2,6 +2,8 @@
 
 Theano implementation of caption-image retrieval from the paper ["Order-Embeddings of Images and Language"](http://arxiv.org/abs/1511.06361).
 
+(If you're looking for the other experiments, the textual entailment code is in a [separate branch]( https://github.com/ivendrov/order-embedding/tree/textual_entailment), and the hypernym code is [here](https://github.com/ivendrov/order-embeddings-wordnet))
+
 Similar to [visual-semantic-embedding](https://github.com/ryankiros/visual-semantic-embedding) of which this repository is a fork, 
 we map images and their captions into a common vector space. The main difference, as explained in the paper, is that we model
 the caption-image relationship as an (asymmetric) partial order rather than a symmetric similarity relation.
