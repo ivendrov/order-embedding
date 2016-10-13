@@ -165,9 +165,9 @@ def trainer(load_from=None,
                 # compute ranking error
                 (r1, r5, r10, medr, meanr), vis_details = t2i(dev_errs, vis_details=True)
                 (r1i, r5i, r10i, medri, meanri) = i2t(dev_errs)
-                print "Text to image: %.1f, %.1f, %.1f, %.1f, %.1f" % (r1, r5, r10, medr, meanr)
+                print "Text to image (dev set): %.1f, %.1f, %.1f, %.1f, %.1f" % (r1, r5, r10, medr, meanr)
                 log.update({'R@1': r1, 'R@5': r5, 'R@10': r10, 'median_rank': medr, 'mean_rank': meanr}, n_samples)
-                print "Image to text: %.1f, %.1f, %.1f, %.1f, %.1f" % (r1i, r5i, r10i, medri, meanri)
+                print "Image to text (dev set): %.1f, %.1f, %.1f, %.1f, %.1f" % (r1i, r5i, r10i, medri, meanri)
                 log.update({'Image2Caption_R@1': r1i, 'Image2Caption_R@5': r5i, 'Image2CaptionR@10': r10i, 'Image2Caption_median_rank': medri, 'Image2Caption_mean_rank': meanri}, n_samples)
 
                 tot = r1 + r5 + r10
